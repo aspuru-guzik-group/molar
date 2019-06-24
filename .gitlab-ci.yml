@@ -1,0 +1,22 @@
+image: continuumio/miniconda3:latest
+
+services:
+  - postgres
+
+job:
+    variables:
+        DB_HOST: "postgres"
+        DB_USER: "postgres"
+        DB_PASSWD: ""
+        DB_NAME: "molecdb"
+    before_script:
+      - conda create -n molecdb python=3.6
+      - source activate molecdb
+      - conda install rdkit -c rdkit
+      - apt-get update
+      - apt-get upgrade -y
+      - apt-get install -y postgresql-client libxrender1
+      - ./pgsql/setup.sh
+      - python setup.py install
+    script:
+      - python setup.py test
