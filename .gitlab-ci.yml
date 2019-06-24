@@ -12,7 +12,6 @@ job:
     before_script:
       - conda create -n molecdb python=3.6
       - source activate molecdb
-      - conda install rdkit -c rdkit
       - apt-get update
       - apt-get upgrade -y
       - apt-get install -y postgresql-client libxrender1

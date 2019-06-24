@@ -5,6 +5,13 @@ services:
       restart: always
       image: 'postgres:11.1'
       ports:
-            - "5432:5432"
+        - "5432:5432"
       volumes:
         - "./data:/var/lib/postgresql/data"
+    docs:
+      restart: always
+      image: 'nginx:mainline-alpine'
+      ports:
+        - "80:80"
+      volumes:
+        - "./docs/_build/html/:/usr/share/nginx/html:ro"
