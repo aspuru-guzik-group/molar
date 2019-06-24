@@ -9,6 +9,7 @@ requirements = [
     "pytz==2019.1",
     "six==1.12.0",
     "SQLAlchemy==1.3.5",
+    "tqdm==4.32.2",
 ]
 
 setup(
