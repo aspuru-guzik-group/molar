@@ -18,7 +18,7 @@ setup(
     author=['Theophile Gaudin'],
     install_requires=requirements,
     setup_requires=["pytest-runner"],
-    tests_require=['pytest'],
+    tests_require=['pytest', 'coverage'],
     extras_require={'doc': ['sphinx_rtd_theme',
                             'nbsphinx',
                             'jupyter']},

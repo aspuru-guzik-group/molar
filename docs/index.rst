@@ -6,9 +6,9 @@
 Welcome to Goldmine's documentation!
 ====================================
 
-Goldmine is an PostgreSQL scheme for a database meant for molecule discovery and implementing event sourcing (see scheme).
+Goldmine is a PostgreSQL scheme for a database meant for molecule discovery. It implements event sourcing  to keep the data safe (see scheme).
 
-In order to make it as easy as possible to use, it also contains a client (see API).
+In order to make it as easy as possible to use, it also contains a python client (see API).
 
 .. toctree::
    :maxdepth: 2

@@ -174,6 +174,11 @@ class  GoldmineClient:
             * uuid (str or list): if data is a dict or list, uuid must be speicified"
         """
         if isinstance(data, pd.DataFrame):
+            try:
+                del data['updated_on']
+                del data['created_on']
+            except KeyError:
+                pass
             iter = data.iterrows()
             if self.use_tqdm:
                 iter = tqdm(data.iterrows(), total=len(data))
@@ -181,19 +186,30 @@ class  GoldmineClient:
                 row = row[1].to_dict()
                 uuid = row['uuid']
                 del row['uuid']
-                del row['created_on']
-                del row['updated_on']
                 self._write_query('update', table_name, row, uuid=uuid)
             self.session.commit()
         elif isinstance(data, dict) and uuid is not None:
+            try:
+                del data['updated_on']
+                del data['created_on']
+            except KeyError:
+                pass
             self._write_query('update', table_name, data=data, uuid=uuid)
             self.session.commit()
         elif isinstance(data, list) and isinstance(uuid, list):
+            for d in data:
+                try:
+                    del d['updated_on']
+                    del d['created_on']
+                except KeyError:
+                    pass
             iter = zip(uuid, data)
             if self.use_tqdm:
                 iter = tqdm(iter)
-            for _id, d in iter:
+            for i, (_id, d) in enumerate(iter):
                 self._write_query('update', table_name, data=d, uuid=_id)
+                if i % 200:
+                    self.session.commit()
             self.session.commit()
         else:
             error_msg = f"data has type {type(data)} but "
@@ -205,7 +221,7 @@ class  GoldmineClient:
 
     def delete(self, table_name, uuid):
         """
-        Remove elements of the database.
+        Removes elements of the database.
 
         For example to flush a table:
         ::
@@ -229,12 +245,27 @@ class  GoldmineClient:
             raise TypeError("uuid should either be a list of a str, got a {type(uuid)}")
 
     def rollback(self, before):
+        """
+        rolls back the database to a certain date. It can also be used to empty
+        the whole database if needed.
+
+        This example will set back the database with the data it had in 1980
+        (it will empty it).
+        ::
+            
+            from datetime import datetime
+            client = GoldmineClient('localhost', 'postgres', '', 'molecdb')
+            client.rollback(datetime(1980, 12, 25)
+
+        Args:
+            * before (datetime.datetime): date from which the rollback will happen.
+        """
         self._write_query('rollback', None, data={'before': before.isoformat()})
         self.session.commit()
 
     def get_fragment(self, smiles):
         """
-        Get the fragment with a particular smiles
+        Gets the fragment with a particular smiles
 
         Args:
             * smiles (str): smiles of a particular fragment to get
@@ -247,7 +278,7 @@ class  GoldmineClient:
 
     def add_fragment(self, smiles):
         """
-        Add a fragment if it's not already in the database.
+        Adds a fragment only if it's not already in the database.
 
         Args:
             * smiles (str): smiles of the fragment to add
@@ -256,17 +287,17 @@ class  GoldmineClient:
             smiles = [smiles]
         events = []
         for s in smiles:
-            fragment = self.get_fragment(smiles)
+            fragment = self.get_fragment(s)
             if fragment.empty:
                 event = self.add('fragment', {'smiles': s})
                 events.append(event)
                 continue
-            events.append(fragment[0].to_dict())
+            events.append(fragment.iloc[0].to_dict())
         return events
 
     def del_fragment(self, smiles):
         """
-        Delete a fragment, or a list of fragments.
+        Deletes a fragment, or a list of fragments.
 
         Args:
             smiles (str or list): smiles or list of smiles of the fragment to
@@ -292,7 +323,7 @@ class  GoldmineClient:
 
     def add_molecule(self, fragment, smiles):
         """
-        Add a molecule and its fragments.
+        Adds a molecule and its fragments.
         
         ::
 
@@ -313,7 +344,7 @@ class  GoldmineClient:
 
     def del_molecule(self, smiles):
         """
-        Delete a molecule, or a list of molecule. This will not remove the fragments.
+        Deletes a molecule, or a list of molecule. This will not remove the fragments.
 
         Args:
             * smiles (str, list): smiles or list of smiles to remove
@@ -326,11 +357,66 @@ class  GoldmineClient:
                 self.delete('molecule_fragment', rel.uuid)
             self.delete('molecule', molecule[0].uuid)
 
-    def add_conformation(self, molecule, atoms, properties):
-        pass
+    def _add_conformation(self, molecule_uuid, atoms, properties=None):
+        # Adding conformation
+        data = {'molecule_id': molecule_uuid}
+        if properties:
+            data['properties'] = properties
 
-    def add_calculation(self, conformation_uuid, data):
-        pass
+        event = self.add('conformation', data)
+
+        # Adding atoms
+        for atom in atoms:
+            atom['conformation_id'] = event.uuid
+        self.add('atom', atoms)
+
+    def add_conformation(self, molecule_uuid, atoms, properties=None):
+        """
+        Adds a conformation to the database
+
+        ::
+            
+            client = GoldmineClient('localhost', 'postgres', '', 'molecdb')
+            client.add_conformation('UUID1', [{'x': 1, 'y': 1, 'z': 1, 'n': 32}])
+
+        Args:
+            * molecule_uuid (str): uuid of the molecule this conformation belongs to.
+            * atoms (list of dict): list of dict containing the (x, y, z) coordinates and the charges (n)
+            * properties: eventual properties attached to this conformation. Must be json-serializable.
+        """
+        self._add_conformation(molecule_uuid, atoms, properties)
+
+
+    def add_calculation(self, status, calculation_type, software_uuid,
+                        conformation_uuid, properties,  output_conformation=None):
+        """
+        Adds a calculation to the database
+
+        Args:
+            * status (models.CalculationStatus): status of the calculation
+            * calculation_type (models.CalculationType): type of calculation
+            * software_uuid (str): uuid of the software in use
+            * conformation_uuid (str): uuid of the conformation used for the calculation
+            * properties (json-like): properties of the calculation
+            * output_conformation (str): output_conformation (if the calculation produce a conformation)
+        """
+        data = {'status': status,
+                'calculation_type': calculation_type,
+                'software_id': software_uuid,
+                'conformation_id': conformation_uuid,
+                'user_id': 1,
+                'properties': properties}
+        if output_conformation:
+            data['output_conformation'] = output_conformation
+        self.add('calculation', data)
 
     def add_software(self, name, version):
-        pass
+        """
+        Adds a software to the database
+
+        Args:
+            * name (str): name of the software (eg. "RDKit")
+            * version (str): version of the software (eg. "2018.09)
+        """
+        data = {'name': name, 'version': version}
+        self.add('software', data)
