@@ -16,7 +16,7 @@ job:
       - apt-get upgrade -y
       - apt-get install -y postgresql-client libxrender1
       - ./pgsql/setup.sh
-      - pip install coverage
+      - pip install coverage pytest
       - python setup.py install
     script:
       - python setup.py test
