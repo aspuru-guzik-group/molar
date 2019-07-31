@@ -2,6 +2,7 @@ from goldmine import GoldmineClient
 import pandas as pd
 import pytest
 import os
+from random import random
 from sqlalchemy import exc
 from datetime import datetime
 
@@ -151,3 +152,16 @@ def test_calculation(client):
                            soft_uuid, 
                            conf_uuid, 
                            {'prop': 1})
+
+def test_add_long_json(client):
+    df = client.get('molecule')
+    molecule_uuid = df.iloc[0]['uuid']
+    atoms = [
+        {'x': 1, 'y': 1, 'z': 1, 'n': 1},
+        {'x': 2, 'y': 2, 'z': 1, 'n': 6},
+        {'x': 3, 'y': 1, 'z': 3, 'n': 5},
+        {'x': 4, 'y': 2, 'z': 1, 'n': 4},
+        {'x': 5, 'y': 1, 'z': 3, 'n': 3}
+    ]
+    long_dict = {'key_'+str(k): random() for k in range(10000)}
+    client.add_conformation(molecule_uuid, atoms, long_dict)
