@@ -18,6 +18,7 @@ In order to make it as easy as possible to use, it also contains a python client
    api
    
    Examples.ipynb
+   FAQ.ipynb
 
 Indices and tables
 ==================
