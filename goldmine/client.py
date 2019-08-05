@@ -23,6 +23,8 @@ class  GoldmineClient:
         Session, engine = database.init_db(self.sql_url)
         from . import models
         self.__models = models
+        for key, val in models.eventstore.__dict__.items():
+            print(key, val)
         self.session = Session()
         self.engine = engine
         self.use_tqdm = use_tqdm
@@ -64,14 +66,19 @@ class  GoldmineClient:
         query = query.limit(limit)
         return query
 
-    def _write_query(self, event, type, data=None, uuid=None):
+    def _write_query(self, event, type, data=None, uuid=None, query='SELECT'):
         params = {'event': event,
                   'type': type,
                   'data': data,
                   'uuid': uuid,
                   'user_id': 1}
         event = self.__models.eventstore(**params)
-        self.session.add(event)
+        if query == 'SELECT':
+            self.session.add(event)
+        elif query == 'DELETE':
+            self.session.delete(event)
+        else:
+            raise NotImplementedError("query type: '{}' is not yet implemented. Please select a valid type.".format(query))
         return event
 
     def _query_to_df(self, query):
@@ -137,7 +144,8 @@ class  GoldmineClient:
             if self.use_tqdm:
                 iter = tqdm(data)
             for i, d in enumerate(iter):
-                event = self._write_query('create', table_name, d)
+                uuid = d.pop('uuid', None)
+                event = self._write_query('create', table_name, d, uuid)
                 events.append(event)
                 if i % 500 == 0:
                     self.session.commit()
