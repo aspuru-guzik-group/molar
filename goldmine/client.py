@@ -319,7 +319,8 @@ class  GoldmineClient:
         params = [{'molecule_id': mol_uuid,
                    'fragment_id': f.uuid,
                    'order': i} for i, f in enumerate(events)]
-        self.add('molecule_fragment', params)
+        event_mf = self.add('molecule_fragment', params)
+        return {'molecule': event, 'molecule_fragment': event_mf}
 
     def add_molecule(self, fragment, smiles):
         """
@@ -333,12 +334,14 @@ class  GoldmineClient:
         Args:
             * fragment (list of smiles or list of list of smiles): fragment to add.
             * smiles (str or list): molecule to add.
+
+        Returns:
+            SQLAlchemy table  or list of SQLAlchemy table
         """
         if isinstance(fragment, list) and isinstance(smiles, str):
-            self._add_molecule(fragment, smiles)
+            return self._add_molecule(fragment, smiles)
         elif isinstance(fragment, list) and isinstance(smiles, list):
-            for frag_list, smi in zip(fragment, smiles):
-                self._add_molecule(frag_list, smi)
+            return [self._add_molecule(frag_list, smi) for frag_list, smi in zip(fragment, smiles)]
         else:
             raise TypeError("fragment should be a list and smiles a str")
 
@@ -357,18 +360,15 @@ class  GoldmineClient:
                 self.delete('molecule_fragment', rel.uuid)
             self.delete('molecule', molecule[0].uuid)
 
-    def _add_conformation(self, molecule_uuid, atoms, properties=None):
+    def _add_conformation(self, molecule_uuid, coordinates, properties=None):
         # Adding conformation
-        data = {'molecule_id': molecule_uuid}
+        data = {'molecule_id': molecule_uuid,
+                'coordinates': coordinates}
         if properties:
             data['properties'] = properties
 
         event = self.add('conformation', data)
-
-        # Adding atoms
-        for atom in atoms:
-            atom['conformation_id'] = event.uuid
-        self.add('atom', atoms)
+        return event
 
     def add_conformation(self, molecule_uuid, atoms, properties=None):
         """
@@ -384,8 +384,8 @@ class  GoldmineClient:
             * atoms (list of dict): list of dict containing the (x, y, z) coordinates and the charges (n)
             * properties: eventual properties attached to this conformation. Must be json-serializable.
         """
-        self._add_conformation(molecule_uuid, atoms, properties)
-
+        event = self._add_conformation(molecule_uuid, atoms, properties)
+        return event
 
     def add_calculation(self, status, calculation_type, software_uuid,
                         conformation_uuid, properties,  output_conformation=None):
@@ -408,7 +408,7 @@ class  GoldmineClient:
                 'properties': properties}
         if output_conformation:
             data['output_conformation'] = output_conformation
-        self.add('calculation', data)
+        return self.add('calculation', data)
 
     def add_software(self, name, version):
         """
@@ -419,4 +419,4 @@ class  GoldmineClient:
             * version (str): version of the software (eg. "2018.09)
         """
         data = {'name': name, 'version': version}
-        self.add('software', data)
+        return self.add('software', data)
