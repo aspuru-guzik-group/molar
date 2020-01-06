@@ -38,7 +38,7 @@ script_location = ./migrations
 databases = test
 
 [test]
-sqlalchemy.url = postgresql://postgres@localhost/molecdb
+sqlalchemy.url = postgresql://postgres@postgres/molecdb
 
 
 [post_write_hooks]

@@ -7,7 +7,7 @@ job:
     variables:
         DB_HOST: "postgres"
         DB_USER: "postgres"
-        DB_PASSWD: ""
+        PGPASSWORD: ""
         DB_NAME: "molecdb"
     before_script:
       - conda create -n molecdb python=3.6
@@ -16,8 +16,9 @@ job:
       - apt-get upgrade -y
       - apt-get install -y postgresql-client libxrender1
       - ./pgsql/setup.sh
-      - pip install coverage pytest
+      - pip install coverage pytest alembic
       - python setup.py install
+      - alembic -c tests/alembic.ini.test upgrade head
     script:
       - python setup.py test
       - coverage run --source goldmine -m py.test

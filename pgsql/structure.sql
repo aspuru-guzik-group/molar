@@ -21,10 +21,12 @@ ALTER TABLE ONLY public.molecule_fragment DROP CONSTRAINT lnk_molecule_fragment;
 ALTER TABLE ONLY public.conformation DROP CONSTRAINT lnk_molecule_conformation;
 ALTER TABLE ONLY public.molecule_fragment DROP CONSTRAINT lnk_fragment_molecule;
 ALTER TABLE ONLY public.calculation DROP CONSTRAINT lnk_conformation_calculation;
+ALTER TABLE ONLY public.atom DROP CONSTRAINT lnk_conformation_atom;
 DROP INDEX public.unique_name_version;
 DROP INDEX public.index_uuid_user;
 DROP INDEX public.index_uuid_calculation;
 DROP INDEX public.index_uuid_software;
+DROP INDEX public.index_uuid_atom;
 DROP INDEX public.index_uuid_conformation;
 DROP INDEX public.index_uuid_fragment;
 DROP INDEX public.index_uuid_molecule;
@@ -40,6 +42,7 @@ ALTER TABLE ONLY public.molecule DROP CONSTRAINT molecule_pkey;
 ALTER TABLE ONLY public.molecule_fragment DROP CONSTRAINT molecule_fragment_pkey;
 ALTER TABLE ONLY public.fragment DROP CONSTRAINT fragment_pkey;
 ALTER TABLE ONLY public.conformation DROP CONSTRAINT conformation_pkey;
+ALTER TABLE ONLY public.atom DROP CONSTRAINT atom_pkey;
 ALTER TABLE public."user" ALTER COLUMN id DROP DEFAULT;
 ALTER TABLE public.software ALTER COLUMN id DROP DEFAULT;
 ALTER TABLE public.molecule_fragment ALTER COLUMN id DROP DEFAULT;
@@ -51,6 +54,8 @@ ALTER TABLE public.conformation ALTER COLUMN molecule_id DROP DEFAULT;
 ALTER TABLE public.conformation ALTER COLUMN id DROP DEFAULT;
 ALTER TABLE public.calculation ALTER COLUMN conformation_id DROP DEFAULT;
 ALTER TABLE public.calculation ALTER COLUMN id DROP DEFAULT;
+ALTER TABLE public.atom ALTER COLUMN conformation_id DROP DEFAULT;
+ALTER TABLE public.atom ALTER COLUMN id DROP DEFAULT;
 DROP SEQUENCE public.user_id_seq;
 DROP TABLE public."user";
 DROP SEQUENCE public."tbl_molecule_MM_fragment_molecule_id_seq";
@@ -66,6 +71,8 @@ DROP TABLE public.fragment;
 DROP SEQUENCE public.conformation_id_seq;
 DROP TABLE public.conformation;
 DROP TABLE public.calculation;
+DROP SEQUENCE public.atom_id_seq;
+DROP TABLE public.atom;
 DROP TYPE public.user_role;
 DROP TYPE public.calculation_type;
 DROP TYPE public.calculation_status;
@@ -130,6 +137,48 @@ SET default_tablespace = '';
 SET default_with_oids = false;
 
 --
+-- Name: atom; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.atom (
+    id integer NOT NULL,
+    uuid uuid NOT NULL,
+    updated_on timestamp without time zone NOT NULL,
+    created_on timestamp without time zone NOT NULL,
+    x real NOT NULL,
+    y real NOT NULL,
+    z real NOT NULL,
+    n integer NOT NULL,
+    conformation_id uuid NOT NULL
+);
+
+
+ALTER TABLE public.atom OWNER TO postgres;
+
+
+--
+-- Name: atom_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.atom_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.atom_id_seq OWNER TO postgres;
+
+--
+-- Name: atom_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.atom_id_seq OWNED BY public.atom.id;
+
+
+--
 -- Name: calculation; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -141,7 +190,6 @@ CREATE TABLE public.calculation (
     status public.calculation_status NOT NULL,
     output text,
     properties jsonb DEFAULT '{}'::jsonb,
-    coordinates jsonb NOT NULL,
     conformation_id uuid NOT NULL,
     software_id uuid NOT NULL,
     user_id integer NOT NULL,
@@ -433,6 +481,13 @@ ALTER SEQUENCE public.user_id_seq OWNED BY public."user".id;
 
 
 --
+-- Name: atom id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.atom ALTER COLUMN id SET DEFAULT nextval('public.atom_id_seq'::regclass);
+
+
+--
 -- Name: conformation id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -487,6 +542,12 @@ ALTER TABLE ONLY public."user" ALTER COLUMN id SET DEFAULT nextval('public.user_
 
 
 --
+-- Name: atom atom_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.atom
+    ADD CONSTRAINT atom_pkey PRIMARY KEY (id);
+
 --
 -- Name: conformation conformation_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
@@ -621,6 +682,8 @@ CREATE INDEX index_uuid_conformation ON public.conformation USING btree (uuid);
 -- Name: index_uuid113; Type: INDEX; Schema: public; Owner: postgres
 --
 
+CREATE INDEX index_uuid_atom ON public.atom USING btree (uuid);
+
 
 --
 -- Name: index_uuid114; Type: INDEX; Schema: public; Owner: postgres
@@ -650,6 +713,13 @@ CREATE INDEX index_uuid_user ON public."user" USING btree (uuid);
 --
 
 CREATE INDEX unique_name_version ON public.software USING btree (name, version);
+
+--
+-- Name: atom lnk_conformation_atom; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.atom
+    ADD CONSTRAINT lnk_conformation_atom FOREIGN KEY (conformation_id) REFERENCES public.conformation(uuid) MATCH FULL ON UPDATE CASCADE;
 
 
 --
