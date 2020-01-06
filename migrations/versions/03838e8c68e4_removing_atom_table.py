@@ -71,3 +71,8 @@ def upgrade_abqc():
 def downgrade_abqc():
     pass
 
+def upgrade_test():
+    pass
+
+def downgrade_test():
+    pass
