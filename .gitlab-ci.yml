@@ -1,9 +1,13 @@
-image: continuumio/miniconda3:latest
+stages:
+  - test
+  - doc
 
 services:
   - postgres
 
 job:
+    when: test
+    image: continuumio/miniconda3:latest
     variables:
         DB_HOST: "postgres"
         DB_USER: "postgres"
@@ -23,3 +27,20 @@ job:
       - python setup.py test
       - coverage run --source goldmine -m py.test
       - coverage report
+
+schemacrawler:
+    when: doc
+    image: schemacrawler/schemacrawler
+    variables:
+        DB_HOST: "postgres"
+        DB_USER: "postgres"
+        PGPASSWORD: ""
+        DB_NAME: "molecdb"
+    script:
+      - schemacrawler -server=postgres -user=portgres -host=postgres -database=molecdb -password='' -c=schema -fmt=scdot -o=schema.graphviz
+    artifacts:
+      paths:
+        schema.graphviz
+
+
+    
