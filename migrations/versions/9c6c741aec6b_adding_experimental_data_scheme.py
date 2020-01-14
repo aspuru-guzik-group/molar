@@ -25,7 +25,7 @@ def upgrade(engine_name):
         'synthesis',
         sa.Column('id', sa.Integer, sa.Sequence('public.synthesis_id_seq'),
             primary_key=True,
-            server_default=sa.text("nextval('synthesis_id_seq'::regclass)")),
+            server_default=sa.text("nextval('public.synthesis_id_seq'::regclass)")),
         sa.Column('uuid', pgsql.UUID, nullable=False),
         sa.Column('created_on', sa.DateTime, nullable=False),
         sa.Column('updated_on', sa.DateTime, nullable=False),
@@ -42,11 +42,12 @@ def upgrade(engine_name):
         'synthesis_machine',
         sa.Column('id', sa.Integer, sa.Sequence('public.synthesis_machine_id_seq'),
             primary_key=True,
-            server_default=sa.text("nextval('synthesis_machine_id_seq'::regclass)")),
+            server_default=sa.text("nextval('public.synthesis_machine_id_seq'::regclass)")),
         sa.Column('uuid', pgsql.UUID, nullable=False),
         sa.Column('created_on', sa.DateTime, nullable=False),
         sa.Column('updated_on', sa.DateTime, nullable=False),
         sa.Column('name', sa.Text, nullable=False),
+        sa.Column('metadata', pgsql.JSONB),
         sa.Column('lab_id', pgsql.UUID, sa.ForeignKey('public.lab.uuid'), nullable=False),
         schema='public'
     )
@@ -128,6 +129,7 @@ def upgrade(engine_name):
         sa.Column('created_on', sa.DateTime, nullable=False),
         sa.Column('updated_on', sa.DateTime, nullable=False),
         sa.Column('name', sa.Text, nullable=False),
+        sa.Column('metadata', pgsql.JSONB),
         sa.Column('lab_id', pgsql.UUID),
         sa.Column('type_id', pgsql.UUID),
         schema='public'

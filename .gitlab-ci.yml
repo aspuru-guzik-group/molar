@@ -6,7 +6,8 @@ services:
   - postgres
 
 job:
-    when: test
+    stage: test
+    when: always
     image: continuumio/miniconda3:latest
     variables:
         DB_HOST: "postgres"
@@ -29,18 +30,47 @@ job:
       - coverage report
 
 schemacrawler:
-    when: doc
-    image: schemacrawler/schemacrawler
+    stage: doc
+    when: always
+    image: 'alpine:3.7'
     variables:
         DB_HOST: "postgres"
         DB_USER: "postgres"
         PGPASSWORD: ""
         DB_NAME: "molecdb"
+    before_script:
+      - apk update 
+      - apk upgrade
+      - apk add --no-cache bash
+      - apk add --no-cache --virtual=build-dependencies unzip
+      - apk add --no-cache curl
+      - apk add --no-cache wget
+      - apk add --no-cache openjdk8-jre
+      - apk add --no-cache python3
+      - apk add --no-cache python3-dev
+      - apk add --no-cache graphviz
+      - apk add --no-cache postgresql-dev
+      - apk add --no-cache postgresql-client
+      - apk add --no-cache gcc
+      - apk add --no-cache musl-dev
+      -  python3 -m ensurepip
+      - pip3 install --upgrade pip setuptools
+      - rm -r /usr/lib/python*/ensurepip
+      - if [ ! -e /usr/bin/pip ]; then ln -s pip3 /usr/bin/pip ; fi 
+      - if [[ ! -e /usr/bin/python ]]; then ln -sf /usr/bin/python3 /usr/bin/python; fi 
+      - rm -r /root/.cache
+      - wget https://github.com/schemacrawler/SchemaCrawler/releases/download/v16.3.0/schemacrawler-16.3.0-distribution.zip
+      - unzip schemacrawler-16.3.0-distribution.zip
+      - pip install alembic psycopg2-binary
+      - ./pgsql/setup.sh
+      - alembic -c tests/alembic.ini.test upgrade head
     script:
-      - schemacrawler -server=postgres -user=portgres -host=postgres -database=molecdb -password='' -c=schema -fmt=scdot -o=schema.graphviz
+      - cd schemacrawler-16.3.0-distribution && ./_schemacrawler/schemacrawler.sh schema -server=postgres -user=portgres -host=postgres -database=molecdb -password='' -c=schema -fmt=scdot -o=schema.graphviz
+      - cd schemacrawler-16.3.0-distribution && dot -Tpng schema.graphviz -o schema.png
     artifacts:
       paths:
-        schema.graphviz
+      - schemacrawler-16.3.0-distribution/schema.graphviz
+      - schemacrawler-16.3.0-distribution/schema.png
 
 
     
