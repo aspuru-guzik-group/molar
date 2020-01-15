@@ -59,18 +59,15 @@ schemacrawler:
       - if [ ! -e /usr/bin/pip ]; then ln -s pip3 /usr/bin/pip ; fi 
       - if [[ ! -e /usr/bin/python ]]; then ln -sf /usr/bin/python3 /usr/bin/python; fi 
       - rm -r /root/.cache
-      - wget https://github.com/schemacrawler/SchemaCrawler/releases/download/v16.3.0/schemacrawler-16.3.0-distribution.zip
-      - unzip schemacrawler-16.3.0-distribution.zip
+      - wget https://github.com/schemacrawler/SchemaCrawler/releases/download/v15.06.01/schemacrawler-15.06.01-distribution.zip
+      - unzip schemacrawler-15.06.01-distribution.zip
       - pip install alembic psycopg2-binary
       - ./pgsql/setup.sh
       - alembic -c tests/alembic.ini.test upgrade head
     script:
-      - cd schemacrawler-16.3.0-distribution && ./_schemacrawler/schemacrawler.sh schema -server=postgres -user=portgres -host=postgres -database=molecdb -password='' -c=schema -fmt=scdot -o=schema.graphviz
-      - cd schemacrawler-16.3.0-distribution && dot -Tpng schema.graphviz -o schema.png
+      - cd schemacrawler-15.06.01-distribution && ./_schemacrawler/schemacrawler.sh -server=postgresql -user=postgres -host=postgres -database=molecdb -password='' -c=schema -fmt=scdot -o=schema.graphviz
+      - dot -Tpng schema.graphviz -o schema.png
     artifacts:
       paths:
-      - schemacrawler-16.3.0-distribution/schema.graphviz
-      - schemacrawler-16.3.0-distribution/schema.png
-
-
-    
+      - schemacrawler-15.06.01-distribution/schema.graphviz
+      - schemacrawler-15.06.01-distribution/schema.png
