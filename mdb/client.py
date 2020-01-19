@@ -6,7 +6,7 @@ import psycopg2
 from . import database
 
 
-class  GoldmineClient:
+class  MDBClient:
     """
     GoldmineClient is a client to connect to the database with an emphasis on
     user-friendliness and pandas integration where it is possible.
@@ -23,14 +23,12 @@ class  GoldmineClient:
         Session, engine = database.init_db(self.sql_url)
         from . import models
         self.__models = models
-        for key, val in models.eventstore.__dict__.items():
-            print(key, val)
         self.session = Session()
         self.engine = engine
         self.use_tqdm = use_tqdm
 
     def __repr__(self):
-        return f"Goldmine Client <{self.sql_url}>"
+        return f"<Madness DB Client {self.sql_url}>"
 
     def get_models(self):
         """

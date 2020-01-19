@@ -1,6 +1,6 @@
 ![test](https://gitlab.com/tgaudin/goldmine/badges/master/pipeline.svg) ![coverage](https://gitlab.com/tgaudin/goldmine/badges/master/coverage.svg)
 
-# Goldmine
+# Madness DB
 
 Install the doc:
 

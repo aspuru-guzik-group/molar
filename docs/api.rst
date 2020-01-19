@@ -1,5 +1,5 @@
 API Reference
 =============
 
-.. autoclass:: goldmine.GoldmineClient
+.. autoclass:: mdb.MDBClient
    :members:

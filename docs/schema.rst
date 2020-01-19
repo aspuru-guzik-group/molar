@@ -11,6 +11,10 @@ All the code and material regarding the database can be found in the `pgsql` fol
     ├── setup.sh            -- Shell script to set up the event sourcing and the structure in the database
     └── structure.sql       -- Structure of the database
 
-The structure looks like this:
+
+Updates and migrations can be found in the `migrations` folder. Alembic is used
+to manage the migrations.
+
+The current structure looks like this:
 
 .. image:: _static/schema.png

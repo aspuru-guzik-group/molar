@@ -1,4 +1,4 @@
-from goldmine import GoldmineClient
+from mdb import MDBClient
 import pandas as pd
 import pytest
 import os
@@ -13,7 +13,7 @@ def client():
     db_user = os.getenv("DB_USER") or "postgres"
     db_pass = os.getenv("DB_PASS") or ""
     db_name = os.getenv("DB_NAME") or "molecdb"
-    return GoldmineClient(db_host, db_user, db_pass, db_name)
+    return MDBClient(db_host, db_user, db_pass, db_name)
 
 
 def test_rollback(client):
