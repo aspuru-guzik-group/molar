@@ -30,7 +30,7 @@ def upgrade(engine_name):
         sa.Column('updated_on', sa.DateTime, nullable=False),
         sa.Column('machine_id', pgsql.UUID, nullable=False),
         sa.Column('targeted_molecule_id', pgsql.UUID, nullable=False),
-        sa.Column('XDL', sa.Text),
+        sa.Column('xdl', sa.Text),
         sa.Column('notes', sa.Text),
         schema='public'
     )
@@ -76,6 +76,7 @@ def upgrade(engine_name):
         'synth_molecule',
         sa.Column('id', sa.Integer),
         sa.Column('uuid', pgsql.UUID, nullable=False, unique=True),
+        sa.Column('hid', sa.Text, nullable=False, unique=True),
         sa.Column('created_on', sa.DateTime, nullable=False),
         sa.Column('updated_on', sa.DateTime, nullable=False),
         sa.Column('synth_id', pgsql.UUID, nullable=False),
@@ -141,10 +142,12 @@ def upgrade(engine_name):
         sa.Column('updated_on', sa.DateTime, nullable=False),
         sa.Column('name', sa.Text, nullable=False),
         sa.Column('metadata', pgsql.JSONB),
-        sa.Column('lab_id', pgsql.UUID),
-        sa.Column('type_id', pgsql.UUID),
+        sa.Column('lab_id', pgsql.UUID, nullable=False),
+        sa.Column('type_id', pgsql.UUID, nullable=False),
         schema='public'
     )
+
+    op.execute('ALTER TABLE ONLY public.experiment_machine ADD CONSTRAINT unique_lab_id_type_id_name UNIQUE (name, lab_id, type_id)') 
 
 
     op.execute('ALTER SEQUENCE public.experiment_machine_id_seq OWNED BY public.experiment_machine.id;')
@@ -163,6 +166,8 @@ def upgrade(engine_name):
         schema='public'
     )
 
+    op.execute('ALTER TABLE ONLY public.experiment_type ADD CONSTRAINT unique_name_labels UNIQUE (name, x_label, y_label);')
+
 
     op.execute('ALTER SEQUENCE public.experiment_type_id_seq OWNED BY public.experiment_type.id;')
     op.execute("ALTER TABLE ONLY public.experiment_type ALTER COLUMN id SET DEFAULT nextval('public.experiment_type_id_seq'::regclass);")
@@ -176,7 +181,7 @@ def upgrade(engine_name):
         sa.Column('uuid', pgsql.UUID, nullable=False, unique=True),
         sa.Column('created_on', sa.DateTime, nullable=False),
         sa.Column('updated_on', sa.DateTime, nullable=False),
-        sa.Column('name', sa.Text, nullable=False),
+        sa.Column('name', sa.Text, nullable=False, unique=True),
         schema='public'
     )
 
