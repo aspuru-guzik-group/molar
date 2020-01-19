@@ -15,7 +15,6 @@ CREATE SEQUENCE IF NOT EXISTS eventstore_id_seq
 
 CREATE TABLE sourcing.eventstore ( 
 	"id" BIGINT DEFAULT nextval('eventstore_id_seq'::regclass) NOT NULL,
-    "user_id" integer NOT NULL,
 	"event" CHARACTER VARYING( 2044 ) NOT NULL,
 	"type" CHARACTER VARYING( 2044 ),
 	"data" jsonb NOT NULL DEFAULT '{}',
@@ -23,9 +22,6 @@ CREATE TABLE sourcing.eventstore (
 	"uuid" UUID,
 	PRIMARY KEY ( "id" ) 
 );
-
-ALTER TABLE ONLY sourcing.eventstore
-    ADD CONSTRAINT eventstore_user FOREIGN KEY (user_id) REFERENCES public.user(id) MATCH FULL ON UPDATE CASCADE ON DELETE NO ACTION;
 
 CREATE OR REPLACE FUNCTION sourcing."on_event"( ) RETURNS TRIGGER AS
 $function$
@@ -134,10 +130,9 @@ BEGIN
         WHEN 'rollback-end' THEN
         WHEN 'rollback' THEN
             -- Remove everything that has not been removed yet
-            INSERT INTO "sourcing"."eventstore" ("event", "type", "uuid", "timestamp", "user_id") (
+            INSERT INTO "sourcing"."eventstore" ("event", "type", "uuid", "timestamp") (
                 SELECT 'delete' AS "event", "type" , "uuid", 
-                       NEW.timestamp AS "timestamp",
-                       NEW.user_id AS "user_id"
+                       NEW.timestamp AS "timestamp"
                     FROM "sourcing"."eventstore" 
                     GROUP BY "uuid", "type" 
                     HAVING NOT (array_agg("event") @> '{delete}' OR "uuid" IS NULL)
@@ -152,18 +147,17 @@ BEGIN
             ELSE
             END CASE;
             EXECUTE 'INSERT INTO "sourcing"."eventstore" 
-                     ("event", "type", "uuid", "data", "timestamp", "user_id") (
+                     ("event", "type", "uuid", "data", "timestamp") (
 		                SELECT "event", 
                                "type", 
                                "uuid", 
                                "data", '
-                               || quote_literal(NEW.timestamp) || ' AS "timestamp", '
-                               || quote_literal(NEW.user_id) || ' AS "user_id" 
+                               || quote_literal(NEW.timestamp) || ' AS "timestamp"
 		                FROM "sourcing"."eventstore"
     		            WHERE ' || LEFT(query_1, -4) ||
 		               'ORDER BY "eventstore"."id" ASC)';
-            INSERT INTO "sourcing"."eventstore" ("event", "data", "timestamp", "user_id") 
-                   VALUES ('rollback-end', NEW.data, NEW.timestamp, NEW.user_id);
+            INSERT INTO "sourcing"."eventstore" ("event", "data", "timestamp") 
+                   VALUES ('rollback-end', NEW.data, NEW.timestamp);
             NEW.event := 'rollback-start';
         ELSE
             RAISE unique_violation USING MESSAGE = 'Invalid event type '|| quote_literal(NEW.event);

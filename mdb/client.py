@@ -68,8 +68,7 @@ class  MDBClient:
         params = {'event': event,
                   'type': type,
                   'data': data,
-                  'uuid': uuid,
-                  'user_id': 1}
+                  'uuid': uuid}
         event = self.__models.eventstore(**params)
         if query == 'SELECT':
             self.session.add(event)
@@ -410,7 +409,6 @@ class  MDBClient:
                 'calculation_type': calculation_type,
                 'software_id': software_uuid,
                 'conformation_id': conformation_uuid,
-                'user_id': 1,
                 'properties': properties}
         if output_conformation:
             data['output_conformation'] = output_conformation
