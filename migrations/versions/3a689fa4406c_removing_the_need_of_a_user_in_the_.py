@@ -19,12 +19,7 @@ depends_on = None
 
 def upgrade(engine_name):
     globals()["upgrade_%s" % engine_name]()
-    try:
-        op.drop_constraint('eventstore_user', 'eventstore', schema='sourcing')
-        op.drop_column('eventstore', 'user_id', schema='sourcing')
-    except sa.exc.ProgrammingError:
-        pass
-    op.drop_constraint('lnk_user_calculation', 'calculation', schema='public')
+    op.drop_table('eventstore', schema='sourcing')
     op.drop_column('calculation', 'user_id', schema='public')
     op.drop_table('user', schema='public')
     es_script = os.path.join(os.path.dirname(__file__), '../../pgsql/event_sourcing.sql')
