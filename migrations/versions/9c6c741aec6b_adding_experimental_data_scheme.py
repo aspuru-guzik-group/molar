@@ -62,7 +62,7 @@ def upgrade(engine_name):
         sa.Column('uuid', pgsql.UUID, nullable=False, unique=True),
         sa.Column('created_on', sa.DateTime, nullable=False),
         sa.Column('updated_on', sa.DateTime, nullable=False),
-        sa.Column('short_name', sa.String(3), nullable=False),
+        sa.Column('short_name', sa.String(3), nullable=False, unique=True),
         sa.Column('name', sa.Text, nullable=False),
         schema='public'
     )
