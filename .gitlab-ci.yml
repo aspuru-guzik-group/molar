@@ -43,17 +43,13 @@ schemacrawler:
       - apk upgrade
       - apk add --no-cache bash
       - apk add --no-cache --virtual=build-dependencies unzip
-      - apk add --no-cache curl
-      - apk add --no-cache wget
-      - apk add --no-cache openjdk8-jre
-      - apk add --no-cache python3
-      - apk add --no-cache python3-dev
-      - apk add --no-cache graphviz
-      - apk add --no-cache postgresql-dev
-      - apk add --no-cache postgresql-client
-      - apk add --no-cache gcc
-      - apk add --no-cache musl-dev
-      -  python3 -m ensurepip
+      - apk add --no-cache curl wget openjdk8-jre python3 python3-dev
+      - apk add --no-cache graphviz postgresql-dev postgresql-client
+      - apk add --no-cache gcc musl-dev
+      - apk add --no-cache terminus-font ttf-inconsolata ttf-dejavu 
+      - apk add --no-cache font-bitstream-* font-noto font-noto-*
+      - apk add --no-cache ttf-font-awesome font-noto-extra
+      - python3 -m ensurepip
       - pip3 install --upgrade pip setuptools
       - rm -r /usr/lib/python*/ensurepip
       - if [ ! -e /usr/bin/pip ]; then ln -s pip3 /usr/bin/pip ; fi 
