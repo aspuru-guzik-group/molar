@@ -46,8 +46,6 @@ schemacrawler:
       - apk add --no-cache curl wget openjdk8-jre python3 python3-dev
       - apk add --no-cache graphviz postgresql-dev postgresql-client
       - apk add --no-cache gcc musl-dev
-      - apk add --no-cache terminus-font ttf-inconsolata ttf-dejavu 
-      - apk add --no-cache ttf-font-awesome font-noto-extra
       - python3 -m ensurepip
       - pip3 install --upgrade pip setuptools
       - rm -r /usr/lib/python*/ensurepip
