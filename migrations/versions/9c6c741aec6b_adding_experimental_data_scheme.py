@@ -28,6 +28,7 @@ def upgrade(engine_name):
         sa.Column('uuid', pgsql.UUID, nullable=False, unique=True),
         sa.Column('created_on', sa.DateTime, nullable=False),
         sa.Column('updated_on', sa.DateTime, nullable=False),
+        sa.Column('hid', sa.String(16), nullable=False),
         sa.Column('machine_id', pgsql.UUID, nullable=False),
         sa.Column('targeted_molecule_id', pgsql.UUID, nullable=False),
         sa.Column('xdl', sa.Text),

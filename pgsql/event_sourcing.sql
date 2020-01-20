@@ -23,6 +23,34 @@ CREATE TABLE sourcing.eventstore (
 	PRIMARY KEY ( "id" ) 
 );
 
+-- LAB_MMDDYYYY_XXX --
+CREATE OR REPLACE FUNCTION public.create_synthesis_hid ( synth_machine_id UUID, ts TIMESTAMP WITHOUT TIME ZONE) 
+RETURNS CHARACTER VARYING(16) AS $synth_hid$
+DECLARE
+    synth_hid TEXT := '';
+BEGIN
+    IF (SELECT EXISTS(SELECT * FROM public.synthesis_machine AS sm WHERE sm.uuid = synth_machine_id)) THEN
+        synth_hid = (SELECT short_name FROM public.lab AS lab 
+                     INNER JOIN public.synthesis_machine AS sm 
+                     ON sm.lab_id = lab.uuid 
+                     WHERE sm.uuid = synth_machine_id) || '_';
+        synth_hid = synth_hid || (SELECT EXTRACT(MONTH FROM ts)) || '-' || 
+                                 (SELECT EXTRACT(DAY FROM ts))   || '-' ||
+                                 (SELECT EXTRACT(YEAR FROM ts));
+        synth_hid = synth_hid || '_' ||
+        (SELECT COUNT(*) FROM public.synthesis AS syn 
+        INNER JOIN public.synthesis_machine AS sm ON syn.machine_id = sm.uuid 
+        INNER JOIN public.lab AS lab ON sm.lab_id = lab.uuid 
+        WHERE syn.created_on > current_date - interval '1 day'
+        AND sm.uuid = synth_machine_id);
+    ELSE
+        RAISE 'machine_id does not exists!';
+    END IF;
+    RETURN synth_hid;
+END;
+$synth_hid$
+LANGUAGE plpgsql;
+
 CREATE OR REPLACE FUNCTION sourcing."on_event"( ) RETURNS TRIGGER AS
 $function$
 DECLARE
@@ -68,6 +96,13 @@ BEGIN
                     CASE WHEN rec.col_name = 'updated_on' OR  rec.col_name = 'created_on' THEN
                         query_1 = query_1 || ', ' || quote_ident(rec.col_name);
                         query_2 = query_2 || ',  CAST('|| quote_literal(NEW.timestamp) || ' AS ' || rec.col_type || ')';
+                    ELSE
+                    END CASE;
+                    CASE WHEN rec.col_name = 'hid' THEN
+                        query_1 = query_1 || ', ' || quote_ident(rec.col_name);
+                        query_2 = query_2 || ', CAST(' || quote_literal((
+                                    SELECT public.create_synthesis_hid((NEW.data->>'machine_id')::uuid, NEW.timestamp)))
+                            || ' AS ' || rec.col_type || ')';
                     ELSE
                     END CASE;
                 END CASE;
