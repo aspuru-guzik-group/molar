@@ -51,6 +51,7 @@ END;
 $synth_hid$
 LANGUAGE plpgsql;
 
+
 CREATE OR REPLACE FUNCTION sourcing."on_event"( ) RETURNS TRIGGER AS
 $function$
 DECLARE
@@ -58,6 +59,7 @@ DECLARE
     data_type CHARACTER VARYING(2044);
     query_1 TEXT := '';
     query_2 TEXT := '';
+    hid CHARACTER VARYING(16) := '';
     rec record;
     count INT := 1;
 BEGIN
@@ -82,12 +84,18 @@ BEGIN
                     FROM "information_schema"."columns"
                     WHERE "table_schema" = 'public' AND "table_name" = NEW.type )
             LOOP
+                -- if column name is in data
                 CASE WHEN (NEW.data ? rec.col_name) = TRUE THEN
                     query_1 = query_1 || ', ' || quote_ident(rec.col_name);
                     CASE rec.col_type
                         WHEN 'USER-DEFINED' THEN
                             query_2 = query_2 || ', CAST('|| quote_literal((NEW.data->>rec.col_name)) || ' AS ' ||
                                 quote_ident(rec.udt_schema) || '.' || quote_ident(rec.udt_name) || ' )';
+
+                        -- for now, the only array we have are of float8 type
+                        WHEN 'ARRAY' THEN
+                            query_2 = query_2 || ', CAST( '|| quote_literal((SELECT array_agg(e::text) FROM 
+                                jsonb_array_elements(NEW.data->rec.col_name) e)::TEXT) || ' AS  FLOAT8[] )';
                         ELSE
                             query_2 = query_2 || ', CAST(' || quote_literal((NEW.data->>rec.col_name)) || ' AS ' ||
                                 rec.col_type || ' )';
@@ -98,16 +106,15 @@ BEGIN
                         query_2 = query_2 || ',  CAST('|| quote_literal(NEW.timestamp) || ' AS ' || rec.col_type || ')';
                     ELSE
                     END CASE;
-                    CASE WHEN rec.col_name = 'hid' THEN
+                    CASE WHEN NEW.type = 'synthesis' AND rec.col_name = 'hid' THEN
+                        hid = (SELECT public.create_synthesis_hid((NEW.data->>'machine_id')::uuid, NEW.timestamp));
                         query_1 = query_1 || ', ' || quote_ident(rec.col_name);
-                        query_2 = query_2 || ', CAST(' || quote_literal((
-                                    SELECT public.create_synthesis_hid((NEW.data->>'machine_id')::uuid, NEW.timestamp)))
-                            || ' AS ' || rec.col_type || ')';
+                        query_2 = query_2 || ', CAST(' || quote_literal(hid) || ' AS ' || rec.col_type || ')';
+                        NEW.data = jsonb_insert(NEW.data, '{hid}', quote_ident((hid::text))::jsonb);
                     ELSE
                     END CASE;
                 END CASE;
             END LOOP;
-            
             EXECUTE 'INSERT INTO public.' || quote_ident(NEW.type) 
                 || '("uuid"' || query_1 || ')' 
                 || ' VALUES (' || quote_literal(NEW.uuid) || query_2 || ') RETURNING "id"'
