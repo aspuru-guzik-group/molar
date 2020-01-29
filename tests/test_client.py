@@ -5,7 +5,7 @@ import os
 from random import random
 from sqlalchemy import exc
 from datetime import datetime
-
+from uuid import UUID
 
 @pytest.fixture
 def client():
@@ -23,10 +23,15 @@ def test_get(client):
     q = client.get('fragment', return_df=False)
     assert not isinstance(q, pd.DataFrame)
 
-
 def test_add(client):
     client.add('fragment', 
             [{'smiles': 'abcd'}, {'smiles': 'dfge'}])
+
+def test_get_uuid(client):
+    u = client.get_uuid('fragment', smiles='abcd')
+    UUID(u) # Validate uuid
+    with pytest.raises(ValueError):
+        client.get_uuid('molecule', smiles='Idontexistlol')
 
 def test_update(client):
     q = client.get('fragment')

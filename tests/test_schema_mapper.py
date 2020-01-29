@@ -28,18 +28,12 @@ def test_add_molecule(mapper):
     mapper.add_molecule('abcd', fragment[0].uuid)
 
 
-def test_add_conformation(mapper):
+def test_add_conformer(mapper):
     molecule = mapper.dao.get('molecule')
 
-    coords = [
-            {'x': 1, 'y': 1, 'z': 1, 'n': 1},
-            {'x': 2, 'y': 2, 'z': 1, 'n': 6},
-            {'x': 3, 'y': 1, 'z': 3, 'n': 5},
-            {'x': 4, 'y': 2, 'z': 1, 'n': 4},
-            {'x': 5, 'y': 1, 'z': 3, 'n': 3}
-            ]
-
-    mapper.add_conformation(molecule[0].uuid, coords, {'property_xasd': 'lol'})
+    x = [1.0, 4.5, 2.1, 3.0]
+    n = [1, 4, 2, 6, 4]
+    mapper.add_conformer(molecule[0].uuid, x, x, x, n, {'property_xasd': 'lol'})
 
 
 def test_add_data_unit(mapper):
@@ -55,10 +49,10 @@ def test_add_software(mapper):
 
 
 def test_add_calculation(mapper):
-    conf = mapper.dao.get('conformation')
+    conf = mapper.dao.get('conformer')
     type = mapper.dao.get('calculation_type')
     software = mapper.dao.get('software')
-    mapper.add_calculation(type[0].uuid, software[0].uuid,
+    mapper.add_calculation('test_in', 'test_out', 'test -c -x', type[0].uuid, software[0].uuid,
             conf[0].uuid, {'is this a test': True})
 
 

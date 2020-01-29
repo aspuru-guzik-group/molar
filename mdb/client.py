@@ -50,6 +50,20 @@ class MDBClient:
         if '_sa_instance_state' in df.columns:
             del df['_sa_instance_state']
         return df
+    
+    def get_uuid(self, table_name, **kwargs):
+        model = getattr(self.models, table_name)
+        filters = []
+        for k, v in kwargs.items():
+            field = getattr(model, k)
+            if field is None:
+                raise ValueError(f'{table_name} has no column {k}!')
+            filters.append(field == v)
+
+        q = self.get(table_name, filters=filters, return_df=False, limit=1)
+        if q is None:
+            raise ValueError(f'No row with the specified filters where found.  Filters: {filters}')
+        return q.uuid
 
     def add(self, table_name, data):
         if isinstance(data, dict):
@@ -162,11 +176,13 @@ class DataAccessObject:
             for f in filters:
                 filter = and_(filter, f)
             query = query.filter(filter)
-
+        
         if limit is None:
             return query.all()
+        elif limit == 1:
+            return query.one_or_none()
 
-        if offset is not NOne:
+        if offset is not None:
             query = query.offset(offset)
         query = query.limit(limit)
         return query
@@ -267,9 +283,10 @@ class SchemaMapper:
         self.dao.session.commit()
         return event
 
-    def add_conformation(self, molecule_uuid, coordinates, metadata):
-        data = {'molecule_id': molecule_uuid, 'coordinates': coordinates, 'metadata': metadata}
-        event = self.dao.add('conformation', data)
+    def add_conformer(self, molecule_uuid, x, y, z, atomic_numbers, metadata):
+        data = {'molecule_id': molecule_uuid, 'x': x, 'y': y, 'z': z,
+                'atomic_numbers': atomic_numbers, 'metadata': metadata}
+        event = self.dao.add('conformer', data)
         self.dao.session.commit()
         return event
     
@@ -279,13 +296,17 @@ class SchemaMapper:
         self.dao.session.commit()
         return event
 
-    def add_calculation(self, calculation_type, software_uuid, conformation_uuid, metadata, output_conformation=None):
-        data = {'calculation_type_id': calculation_type,
+    def add_calculation(self, input, output, command_line, calculation_type, software_uuid, conformer_uuid,
+            metadata, output_conformer_uuid=None):
+        data = {'input': input,
+                'output': output,
+                'command_line': command_line,
+                'calculation_type_id': calculation_type,
                 'software_id': software_uuid,
-                'conformation_id': conformation_uuid,
+                'conformer_id': conformer_uuid,
                 'metadata': metadata}
-        if output_conformation is not None:
-            data['output_conformation'] = output_conformation
+        if output_conformer_uuid is not None:
+            data['output_conformer_id'] = output_conformer_uuid
         event = self.dao.add('calculation', data)
         self.dao.session.commit()
         return event

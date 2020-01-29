@@ -46,7 +46,7 @@ def run_migrations_offline():
     )
 
     with context.begin_transaction():
-        context.run_migrations(engine_name='madness')
+        context.run_migrations()
 
 
 def run_migrations_online():
@@ -68,7 +68,7 @@ def run_migrations_online():
         )
 
         with context.begin_transaction():
-            context.run_migrations(engine_name='madness')
+            context.run_migrations()
 
 
 if context.is_offline_mode():

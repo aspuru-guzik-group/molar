@@ -16,13 +16,11 @@ branch_labels = None
 depends_on = None
 
 
-def upgrade(engine_name):
-    globals()["upgrade_%s" % engine_name]()
+def upgrade():
     op.add_column('conformation', sa.Column('coordinates', sa.dialects.postgresql.JSONB), schema='public')
     op.drop_table('atom', schema='public')
 
-def downgrade(engine_name):
-    globals()["downgrade_%s" % engine_name]()
+def downgrade():
     op.drop_column('conformation', 'coordinates')
     op.execute("""
     CREATE TABLE public.atom (

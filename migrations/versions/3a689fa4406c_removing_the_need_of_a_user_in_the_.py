@@ -17,7 +17,7 @@ branch_labels = None
 depends_on = None
 
 
-def upgrade(engine_name):
+def upgrade():
     globals()["upgrade_%s" % engine_name]()
     op.drop_table('eventstore', schema='sourcing')
     op.drop_column('calculation', 'user_id', schema='public')
@@ -27,35 +27,5 @@ def upgrade(engine_name):
     op.execute(es_script)
 
 
-def downgrade(engine_name):
-    globals()["downgrade_%s" % engine_name]()
-    
-
-def upgrade_madness():
-    pass
-
-
-def downgrade_madness():
-    pass
-
-
-def upgrade_playground():
-    pass
-
-
-def downgrade_playground():
-    pass
-
-
-def upgrade_abqc():
-    pass
-
-
-def downgrade_abqc():
-    pass
-
-def upgrade_test():
-    pass
-
-def downgrade_test():
+def downgrade():
     pass

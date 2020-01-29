@@ -15,73 +15,9 @@ SET check_function_bodies = false;
 SET client_min_messages = warning;
 SET row_security = off;
 
-ALTER TABLE ONLY public.calculation DROP CONSTRAINT lnk_user_calculation;
-ALTER TABLE ONLY public.calculation DROP CONSTRAINT lnk_software_calculation;
-ALTER TABLE ONLY public.molecule_fragment DROP CONSTRAINT lnk_molecule_fragment;
-ALTER TABLE ONLY public.conformation DROP CONSTRAINT lnk_molecule_conformation;
-ALTER TABLE ONLY public.molecule_fragment DROP CONSTRAINT lnk_fragment_molecule;
-ALTER TABLE ONLY public.calculation DROP CONSTRAINT lnk_conformation_calculation;
-ALTER TABLE ONLY public.atom DROP CONSTRAINT lnk_conformation_atom;
-DROP INDEX public.unique_name_version;
-DROP INDEX public.index_uuid_user;
-DROP INDEX public.index_uuid_calculation;
-DROP INDEX public.index_uuid_software;
-DROP INDEX public.index_uuid_atom;
-DROP INDEX public.index_uuid_conformation;
-DROP INDEX public.index_uuid_fragment;
-DROP INDEX public.index_uuid_molecule;
-DROP INDEX public.index_user_id;
-DROP INDEX public.index_conformation_id;
-ALTER TABLE ONLY public."user" DROP CONSTRAINT user_pkey;
-ALTER TABLE ONLY public."user" DROP CONSTRAINT unique_user_name;
-ALTER TABLE ONLY public.software DROP CONSTRAINT unique_software_version;
-ALTER TABLE ONLY public.molecule DROP CONSTRAINT unique_molecule_smiles;
-ALTER TABLE ONLY public.fragment DROP CONSTRAINT uniqu_fragment_smiles;
-ALTER TABLE ONLY public.software DROP CONSTRAINT software_pkey;
-ALTER TABLE ONLY public.molecule DROP CONSTRAINT molecule_pkey;
-ALTER TABLE ONLY public.molecule_fragment DROP CONSTRAINT molecule_fragment_pkey;
-ALTER TABLE ONLY public.fragment DROP CONSTRAINT fragment_pkey;
-ALTER TABLE ONLY public.conformation DROP CONSTRAINT conformation_pkey;
-ALTER TABLE ONLY public.atom DROP CONSTRAINT atom_pkey;
-ALTER TABLE public."user" ALTER COLUMN id DROP DEFAULT;
-ALTER TABLE public.software ALTER COLUMN id DROP DEFAULT;
-ALTER TABLE public.molecule_fragment ALTER COLUMN id DROP DEFAULT;
-ALTER TABLE public.molecule_fragment ALTER COLUMN fragment_id DROP DEFAULT;
-ALTER TABLE public.molecule_fragment ALTER COLUMN molecule_id DROP DEFAULT;
-ALTER TABLE public.molecule ALTER COLUMN id DROP DEFAULT;
-ALTER TABLE public.fragment ALTER COLUMN id DROP DEFAULT;
-ALTER TABLE public.conformation ALTER COLUMN molecule_id DROP DEFAULT;
-ALTER TABLE public.conformation ALTER COLUMN id DROP DEFAULT;
-ALTER TABLE public.calculation ALTER COLUMN conformation_id DROP DEFAULT;
-ALTER TABLE public.calculation ALTER COLUMN id DROP DEFAULT;
-ALTER TABLE public.atom ALTER COLUMN conformation_id DROP DEFAULT;
-ALTER TABLE public.atom ALTER COLUMN id DROP DEFAULT;
-DROP SEQUENCE public.user_id_seq;
-DROP TABLE public."user";
-DROP SEQUENCE public."tbl_molecule_MM_fragment_molecule_id_seq";
-DROP SEQUENCE public."tbl_molecule_MM_fragment_fragment_id_seq";
-DROP SEQUENCE public.software_id_seq;
-DROP TABLE public.software;
-DROP SEQUENCE public.molecule_id_seq;
-DROP SEQUENCE public.molecule_fragment_id_seq;
-DROP TABLE public.molecule_fragment;
-DROP TABLE public.molecule;
-DROP SEQUENCE public.fragment_id_seq;
-DROP TABLE public.fragment;
-DROP SEQUENCE public.conformation_id_seq;
-DROP TABLE public.conformation;
-DROP TABLE public.calculation;
-DROP SEQUENCE public.atom_id_seq;
-DROP TABLE public.atom;
-DROP TYPE public.user_role;
-DROP TYPE public.calculation_type;
-DROP TYPE public.calculation_status;
-DROP SCHEMA public;
---
 -- Name: public; Type: SCHEMA; Schema: -; Owner: postgres
 --
 
-CREATE SCHEMA public;
 
 
 ALTER SCHEMA public OWNER TO postgres;
@@ -735,7 +671,7 @@ ALTER TABLE ONLY public.calculation
 --
 
 ALTER TABLE ONLY public.calculation
-    ADD CONSTRAINT lnk_conformation_calculation FOREIGN KEY (conformation_id) REFERENCES public.conformation(uuid) MATCH FULL ON UPDATE CASCADE;
+    ADD CONSTRAINT lnk_output_conformation_calculation FOREIGN KEY (conformation_id) REFERENCES public.conformation(uuid) MATCH FULL ON UPDATE CASCADE;
 
 
 --

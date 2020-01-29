@@ -17,8 +17,7 @@ branch_labels = None
 depends_on = None
 
 
-def upgrade(engine_name):
-    globals()["upgrade_%s" % engine_name]()
+def upgrade():
     op.execute('CREATE SEQUENCE public.synthesis_id_seq AS integer INCREMENT BY 1 START WITH 1 NO MINVALUE NO MAXVALUE CACHE 1;')
     op.create_table(
         'synthesis',
@@ -264,9 +263,7 @@ def upgrade(engine_name):
     ' REFERENCES public.experiment_type(uuid) MATCH FULL ON UPDATE CASCADE;'))
 
 
-def downgrade(engine_name):
-    globals()["downgrade_%s" % engine_name]()
-
+def downgrade():
     op.execute(sa.schema.DropSequence(sa.Sequence('public.synthesis_id_seq')))
     op.drop_table('synthesis', schema='public')
 

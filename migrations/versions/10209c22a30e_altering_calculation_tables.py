@@ -16,9 +16,7 @@ branch_labels = None
 depends_on = None
 
 
-def upgrade(engine_name):
-    globals()["upgrade_%s" % engine_name]()
-
+def upgrade():
     op.execute('ALTER TABLE calculation DROP COLUMN calculation_type')
     op.execute('DROP TYPE calculation_type CASCADE;')
     op.execute('DROP TYPE calculation_status CASCADE;')
@@ -51,9 +49,9 @@ def upgrade(engine_name):
         ' REFERENCES public.calculation_type(uuid) MATCH FULL ON UPDATE CASCADE;'))
 
 
-def downgrade(engine_name):
-    globals()["downgrade_%s" % engine_name]()
+def downgrade():
     # YOLO!
+    pass
 
 
 
