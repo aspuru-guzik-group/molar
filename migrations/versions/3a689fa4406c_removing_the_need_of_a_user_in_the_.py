@@ -18,7 +18,6 @@ depends_on = None
 
 
 def upgrade():
-    globals()["upgrade_%s" % engine_name]()
     op.drop_table('eventstore', schema='sourcing')
     op.drop_column('calculation', 'user_id', schema='public')
     op.drop_table('user', schema='public')

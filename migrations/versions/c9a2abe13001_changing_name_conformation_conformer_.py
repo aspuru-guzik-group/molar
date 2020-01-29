@@ -34,7 +34,8 @@ def upgrade():
                                           ADD COLUMN command_line TEXT;''')
     op.execute('''ALTER TABLE calculation
         RENAME CONSTRAINT lnk_conformation_calculation 
-                       TO lnk_conformer_calculation,
+                       TO lnk_conformer_calculation;
+        ALTER TABLE calculation
         RENAME CONSTRAINT lnk_output_conformation_calculation 
                        TO lnk_output_conformer_calculation;''')
                 
@@ -56,6 +57,7 @@ def downgrade():
                                            DROP COLUMN atomic_numbers;''')
     op.execute('''ALTER TABLE calculation
         RENAME CONSTRAINT lnk_conformer_calculation 
-                       TO lnk_conformation_calculation,
+                       TO lnk_conformation_calculation;
+        ALTER TABLE calculation
         RENAME CONSTRAINT lnk_output_conformer_calculation 
                        TO lnk_output_conformation_calculation;''')
