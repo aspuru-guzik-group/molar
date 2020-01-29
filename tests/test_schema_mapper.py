@@ -1,4 +1,5 @@
-from mdb.client import DataAccessObject, SchemaMapper
+from mdb.client import DataAccessObject
+from mdb.mapper import  SchemaMapper
 from mdb.database import init_db
 
 import os
