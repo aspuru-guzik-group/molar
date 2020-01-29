@@ -1,5 +1,5 @@
-DROP EXTENSION IF EXISTS "uuid-ossp";
-CREATE EXTENSION "uuid-ossp";
+-- DROP EXTENSION IF EXISTS "uuid-ossp";
+--CREATE EXTENSION "uuid-ossp";
 
 DROP SCHEMA IF EXISTS "sourcing" CASCADE;
 CREATE SCHEMA "sourcing";
@@ -7,14 +7,14 @@ CREATE SCHEMA "sourcing";
 DROP TABLE IF EXISTS "sourcing"."eventstore";
 DROP SEQUENCE IF EXISTS "sourcing"."eventstore_id_seq";
 
-CREATE SEQUENCE IF NOT EXISTS eventstore_id_seq
+CREATE SEQUENCE IF NOT EXISTS sourcing.eventstore_id_seq
     INCREMENT BY 1
     MINVALUE 1
     NO MAXVALUE
     START WITH 1;
 
 CREATE TABLE sourcing.eventstore ( 
-	"id" BIGINT DEFAULT nextval('eventstore_id_seq'::regclass) NOT NULL,
+	"id" BIGINT DEFAULT nextval('sourcing.eventstore_id_seq'::regclass) NOT NULL,
 	"event" CHARACTER VARYING( 2044 ) NOT NULL,
 	"type" CHARACTER VARYING( 2044 ),
 	"data" jsonb NOT NULL DEFAULT '{}',

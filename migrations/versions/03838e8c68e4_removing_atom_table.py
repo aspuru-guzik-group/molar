@@ -18,8 +18,8 @@ depends_on = None
 
 def upgrade(engine_name):
     globals()["upgrade_%s" % engine_name]()
-    op.add_column('conformation', sa.Column('coordinates', sa.dialects.postgresql.JSONB))
-    op.drop_table('atom')
+    op.add_column('conformation', sa.Column('coordinates', sa.dialects.postgresql.JSONB), schema='public')
+    op.drop_table('atom', schema='public')
 
 def downgrade(engine_name):
     globals()["downgrade_%s" % engine_name]()
