@@ -6,12 +6,22 @@ from sqlalchemy import and_
 import psycopg2
 
 from . import database
+from . import mapper
 
 
-class MDBClient:
-    def __init__(self, hostname, username, password, database_name,
-            use_tqdm=True, convert_smiles=True, convert_synth_hid=True,
-            convert_lab_short_name=True):
+class MDBClient(mapper.SchemaMapper):
+    """
+    MDBClient is a high-level client for the madness database. There is an
+    emphasis on user-friendliness and a thight integration with pandas.
+
+    :param hostname: database hostname (string)
+    :param username: database username (string)
+    :param password: database password (string)
+    :param database_name: name of the database to access (string)
+    :param use_tqdm: how a tqdm progressbar if set to True. (boolean, optional)
+
+    """
+    def __init__(self, hostname, username, password, database_name, use_tqdm=True):
         self.sql_url = f"postgresql://{username}:{password}@{hostname}/{database_name}"
         Session, engine, models = database.init_db(self.sql_url)
         self.session = Session()
@@ -19,22 +29,7 @@ class MDBClient:
         self.models = models
 
         self.dao =  DataAccessObject(self.session, self.models)
-        self.mapper = SchemaMapper(self.dao)
         self.rollback = self.dao.rollback
-
-        mapper_methods = [func for func in dir(self.mapper) if \
-                          callable(getattr(self.mapper, func)) \
-                          and not func.startswith("__")]
-
-        for fname, func in self.mapper.__class__.__dict__.items():
-            if fname.startswith('__'):
-                continue
-            func = ArgumentsFetcher(func,
-                                    self.dao,
-                                    convert_smiles,
-                                    convert_synth_hid,
-                                    convert_lab_short_name)
-            setattr(self, fname, func)
 
         self.use_tqdm = use_tqdm
 
@@ -42,6 +37,38 @@ class MDBClient:
         self.session.close()
 
     def get(self, table_name, return_df=True, filters=None, limit=None, offset=None):
+        """
+        This method allows to read data stored in the database.
+
+        :param table_name: (str or List(str)) name(s) of the table(s) to access
+        :param return_df: (bool) returns a pandas.DataFrame if True
+        :param filters: (list) list of fitlers 
+        :param limit: (int or None) limits how many rows should be loaded.
+        :param offset: (int or None) indicates how many rows to skip.
+        
+        :returns: List of queried object of pandas.DataFrame containing the data
+
+        Typical usage:        
+       
+        .. code-block:: python
+
+            client = MDBCLient('localhost', 'postgres', '', 'madness')
+            df = client.get('fragment')
+            df.head()
+
+        It is also possible to acces data from many tables at the same time, as
+        long as they are related. For instance, in the here-below example, we
+        are joining both table `fragment` and `molecule` and filter for a
+        specific smiles.
+        
+        .. code-block:: python
+
+            client = MDBCLient('localhost', 'postgres', '', 'madness')
+            df = client.get(['fragment', 'molecule'],
+                            filters=[client.models.Molecule.smiles == 'C1=CC=CC=C1'])
+            df.head()
+        
+        """
         data = self.dao.get(table_name, filters, limit, offset)
         if not return_df:
             return data
@@ -51,6 +78,23 @@ class MDBClient:
         return df
     
     def get_uuid(self, table_name, **kwargs):
+        """
+        This method helps finding the uuid of a specific item in the database.
+        it will be usefule when adding data with relationships.
+
+        :param table_name (str): name of the table
+        :param kwargs: keyword arguments which will be used to build filters. Those 
+        keywords have to correspond to existing column in the table.
+
+        :returns: The uuid as a string. If the objects can't be find, a
+        exception is raised.
+
+        .. code-block:: python
+            
+            client = MDBCLient('localhost', 'postgres', '', 'madness')
+            molecule_uuid = client.get_uuid('molecule', smiles='C1=CC=CC=C1')
+
+        """
         model = getattr(self.models, table_name)
         filters = []
         for k, v in kwargs.items():
@@ -65,6 +109,23 @@ class MDBClient:
         return q.uuid
 
     def add(self, table_name, data):
+        """
+        This method can add data to any existing table in the database. This
+        method will returns the events created in the eventstore which contains
+        some information about the object such as its uuid.
+
+        :param table_name: name of the table (string)
+        :param data: data to add (list, pandas.DataFrame or dict)
+
+        Example:
+
+        .. code-block:: python
+            
+            client = MDBCLient('localhost', 'postgres', '', 'madness')
+            event = client.add('molecule', {'smiles': 'C1=CC=CC=C1'})
+            print(event.uuid)
+        
+        """
         if isinstance(data, dict):
             data = [data]
         if isinstance(data, list):
@@ -85,6 +146,24 @@ class MDBClient:
         return events
 
     def update(self, table_name, data, uuid=None):
+        """
+        This method serves to update specifics rows of a table.
+
+        :table_name (str): name of the table
+        :data (pandas.DataFrame, list or dict): data to update
+        :uuid (str or list): if data does not contains the uuid, it must be specified.
+
+        Example:
+
+        .. code-block:: python
+            
+            client = MDBClient('localhost', 'postgres', '', 'madness')
+            df = client.get('molecule')
+            df.at[0, 'smiles'] = 'C#N'
+            client.update('molecule', df)
+            df = client.get('molecule')
+            df.head()
+        """
         if isinstance(data, dict):
             data = [data]
         if isinstance(data, list):
@@ -115,6 +194,20 @@ class MDBClient:
         return events
 
     def delete(self, table_name, uuid):
+        """
+        This method deletes data from the database.
+
+        :table_name (str): name of the table
+        :uuid (str, List(str)): uuid to remove
+
+        .. code-block:: python
+            
+            client = MDBClient('localhost', 'postgres', '', 'madness')
+            df = client.get('molecule')
+            client.delete('molecule', df['uuid'].tolist())
+            
+
+        """
         if isinstance(uuid, str):
             uuid = [uuid]
 
@@ -127,6 +220,21 @@ class MDBClient:
         return events
 
     def rollback(self, before):
+        """
+        Performs a rollback on the database. For now, it only supports to be
+        restored to a prior date.
+
+        :before (datetime.datetime): prior date.
+        
+        Example:
+
+        .. code-block:: python
+        
+            from datetime import datetime
+            client = MDBClient('localhost', 'postgres', '', 'madness')
+            client.rollback(datetime(1980, 12, 25)
+        """
+
         self.dao.rollback(before)
 
 
@@ -134,12 +242,11 @@ class DataAccessObject:
     """
     Data Access Object.
 
-    Define the low level interactions between MDBClient and the database.
+    Define the low level interactions between MDBClient and the database. It is
+    not meant to be used on its own.
 
-    Parameters:
-
-        * session: (sqlalchemy.orm.session.Session)
-        * models: (sqlalchemy.orm.mapper)
+    :session: (sqlalchemy.orm.session.Session)
+    :models: (sqlalchemy.orm.mapper)
     """
     def __init__(self, session, models):
         self.session = session
@@ -149,12 +256,10 @@ class DataAccessObject:
         """
         Reads data from a table
 
-        Parameters:
-
-            * table_name
-            * filters
-            * limit
-            * offset
+        :table_name (str):
+        :filters (list):
+        :limit (int or None):
+        :offset (int or None):
         """
         if not isinstance(table_name, list):
             table_name = [table_name]
@@ -192,6 +297,7 @@ class DataAccessObject:
         eventstore with a 'type' of table_name
 
         Parameters:
+        -----------
 
             * table_name
             * data
@@ -209,6 +315,7 @@ class DataAccessObject:
         the eventstore with a 'type' of table_name
 
         Parameters:
+        -----------
 
             * table_name
             * uuid
@@ -226,6 +333,7 @@ class DataAccessObject:
         the eventstore with a 'type' of table_name
 
         Parameters:
+        -----------
 
             * table_name
             * data
@@ -245,163 +353,15 @@ class DataAccessObject:
         eventstore. For now, until rollback to a specific date is available.
 
         Parameters:
-            
-            * before:
+        -----------
+
+            * before: (datetime.dateime)
         """
 
         params = {'event': 'rollback',
                   'data': {'before': before.isoformat()}}
         event = self.models.eventstore(**params)
         self.session.add(event)
-        return event
-
-
-class SchemaMapper:
-    """
-    SchemaMapper map the schema of the database. It contains some utility function to
-    add data to the database.
-
-    It is meant to be used through MDBClient.
-    """
-    def __init__(self, dao):
-        self.dao = dao
-    
-    def add_fragment(self, smiles):
-        event = self.dao.add('fragment', {'smiles': smiles})
-        self.dao.session.commit()
-        return event
-
-    def add_molecule(self, smiles, fragments_uuid):
-        event = self.dao.add('molecule', {'smiles': smiles})
-        if not isinstance(fragments_uuid, list):
-            fragments_uuid = [fragments_uuid]
-        self.dao.session.commit()
-        for order, uuid in enumerate(fragments_uuid):
-            data = {'molecule_id': event.uuid, 'fragment_id': uuid, 'order': order}
-            self.dao.add('molecule_fragment', data)
-        self.dao.session.commit()
-        return event
-
-    def add_conformer(self, molecule_uuid, x, y, z, atomic_numbers, metadata):
-        data = {'molecule_id': molecule_uuid, 'x': x, 'y': y, 'z': z,
-                'atomic_numbers': atomic_numbers, 'metadata': metadata}
-        event = self.dao.add('conformer', data)
-        self.dao.session.commit()
-        return event
-    
-    def add_calculation_type(self, name):
-        data = {'name': name}
-        event = self.dao.add('calculation_type', data)
-        self.dao.session.commit()
-        return event
-
-    def add_calculation(self, input, output, command_line, calculation_type, software_uuid, conformer_uuid,
-            metadata, output_conformer_uuid=None):
-        data = {'input': input,
-                'output': output,
-                'command_line': command_line,
-                'calculation_type_id': calculation_type,
-                'software_id': software_uuid,
-                'conformer_id': conformer_uuid,
-                'metadata': metadata}
-        if output_conformer_uuid is not None:
-            data['output_conformer_id'] = output_conformer_uuid
-        event = self.dao.add('calculation', data)
-        self.dao.session.commit()
-        return event
-
-    def add_software(self, name, version):
-        data = {'name': name, 'version': version}
-        event = self.dao.add('software', data)
-        self.dao.session.commit()
-        return event
-
-    def add_lab(self, name, short_name):
-        data = {'name': name, 'short_name': short_name}
-        event = self.dao.add('lab', data)
-        self.dao.session.commit()
-        return event
-
-    def add_synthesis_machine(self, name, metadata, lab_uuid):
-        data = {'name': name, 'metadata': metadata, 'lab_id': lab_uuid}
-        event = self.dao.add('synthesis_machine', data)
-        self.dao.session.commit()
-        return event
-
-    def add_synthesis(self, machine_uuid, targeted_molecule_uuid, xdl, notes):
-        data = {'targeted_molecule_id': targeted_molecule_uuid,
-                'machine_id': machine_uuid,
-                'xdl': xdl,
-                'notes': notes}
-        event = self.dao.add('synthesis', data)
-        self.dao.session.commit()
-        return event
-
-    def add_synth_molecule(self, synth_uuid, molecule_uuid, yield_):
-        data = {'synth_id': synth_uuid, 'molecule_id': molecule_uuid, 'yield': yield_}
-        event = self.dao.add('synth_molecule', data)
-        self.dao.session.commit()
-        return event
-
-    def add_synth_fragment(self, synth_uuid, fragment_uuid, yield_):
-        data = {'synth_id': synth_uuid, 'fragment_id': fragment_uuid, 'yield': yield_}
-        event = self.dao.add('synth_fragment', data)
-        self.dao.session.commit()
-        return event
-
-    def add_synthesis_machine(self, name, metadata, lab_uuid):
-        data = {'name': name, 'metadata': metadata, 'lab_id': lab_uuid}
-        event = self.dao.add('synthesis_machine', data)
-        self.dao.session.commit()
-        return event
-
-    def add_experiment_machine(self, name, metadata, type_uuid, lab_uuid):
-        data = {'name': name, 'lab_id': lab_uuid, 'type_id': type_uuid, 'metadata': metadata}
-        event = self.dao.add('experiment_machine', data)
-        self.dao.session.commit()
-        return event
-
-    def add_experiment_type(self, name):
-        data = {'name': name}
-        event = self.dao.add('experiment_type', data)
-        self.dao.session.commit()
-        return event
-
-    def add_experiment(self, synth_uuid, x, y, x_units_uuid, y_units_uuid,
-            machine_uuid, metadata, notes):
-        data = {'synth_id': synth_uuid, 
-                'metadata': metadata,
-                'notes': notes}
-        event = self.dao.add('experiment', data)
-        self.dao.session.commit()
-        self.add_xy_data_experiment(event.uuid, x, y, x_units_uuid, y_units_uuid)
-        return event
-
-    def add_xy_data_experiment(self, experiment_uuid, x, y, x_units_uuid, y_units_uuid):
-        data = {'experiment_uuid': experiment_uuid,
-                'x': x,
-                'y': y,
-                'x_units_uuid': x_units_uuid,
-                'y_units_uuid': y_units_uuid}
-        event = self.dao.add('xy_data', data)
-        self.dao.session.commit()
-        return event
-
-    def add_xy_data_calculation(self, calculation_uuid, x, y, x_units_uuid,
-            y_units_uuid):
-        data = {'calculation_uuid': calculation_uuid,
-                'x': x,
-                'y': y,
-                'x_units_uuid': x_units_uuid,
-                'y_units_uuid': y_units_uuid}
-        event = self.dao.add('xy_data', data)
-        self.dao.session.commit()
-        return event
-
-    def add_data_unit(self, name):
-        data = {'name': name}
-        event = self.dao.add('data_unit', data)
-        self.dao.session.commit()
         return event
 
 

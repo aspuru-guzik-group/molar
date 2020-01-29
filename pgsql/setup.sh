@@ -12,6 +12,7 @@ setup_database() {
     local db_name=$3
     local db_passwd=$4
     PGPASSWORD=${db_passwd} psql -U ${db_user}  -h ${db_host} -c "CREATE DATABASE ${db_name};"
+    PGPASSWORD=${db_passwd} psql -U ${db_user}  -h ${db_host} -d ${db_name} -c "CREATE EXTENSION \"uuid-ossp\";"
     PGPASSWORD=${db_passwd} psql -U ${db_user} -a -d ${db_name} -h ${db_host} -f pgsql/structure.sql
     PGPASSWORD=${db_passwd} psql -U ${db_user} -a -d ${db_name} -h ${db_host} -f pgsql/event_sourcing.sql
 }
