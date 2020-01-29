@@ -12,8 +12,10 @@ def cli():
     pass
 
 @cli.group()
-def admin():
-    pass
+@click.pass_context
+def admin(ctx):
+    
+    
 
 @cli.command()
 def get():
