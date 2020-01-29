@@ -13,10 +13,9 @@ class MDBClient:
             use_tqdm=True, convert_smiles=True, convert_synth_hid=True,
             convert_lab_short_name=True):
         self.sql_url = f"postgresql://{username}:{password}@{hostname}/{database_name}"
-        Session, engine = database.init_db(self.sql_url)
+        Session, engine, models = database.init_db(self.sql_url)
         self.session = Session()
         self.engine = engine
-        from . import models
         self.models = models
 
         self.dao =  DataAccessObject(self.session, self.models)

@@ -13,8 +13,7 @@ def mapper():
     db_user = os.getenv("DB_USER") or "postgres"
     db_pass = os.getenv("DB_PASS") or ""
     db_name = os.getenv("DB_NAME") or "molecdb"
-    Session, _ = init_db(f'postgresql://{db_user}:{db_pass}@{db_host}/{db_name}')
-    from mdb import models
+    Session, _, models = init_db(f'postgresql://{db_user}:{db_pass}@{db_host}/{db_name}')
     dao = DataAccessObject(Session(), models)
     return SchemaMapper(dao)
 

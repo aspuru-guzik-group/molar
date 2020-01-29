@@ -11,6 +11,8 @@ def dump(query):
 
 
 def init_db(uri):
+    class Models: pass
+
     engine = create_engine(uri, convert_unicode=True)
     Session = sessionmaker(autocommit=False, autoflush=True, bind=engine)
     Base.prepare(engine,
@@ -18,4 +20,8 @@ def init_db(uri):
     Base.prepare(engine,
                  reflect=True,
                  schema='sourcing')
-    return Session, engine
+
+    models = Models()
+    for k in Base.classes.keys():
+        setattr(models, k, Base.classes[k])
+    return Session, engine, models

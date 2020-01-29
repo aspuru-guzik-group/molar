@@ -8,49 +8,48 @@ import pytest
 
 
 @pytest.fixture
-def dac():
+def dao():
     db_host = os.getenv("DB_HOST") or "localhost"
     db_user = os.getenv("DB_USER") or "postgres"
     db_pass = os.getenv("DB_PASS") or ""
     db_name = os.getenv("DB_NAME") or "molecdb"
-    Session, _ = init_db(f'postgresql://{db_user}:{db_pass}@{db_host}/{db_name}')
-    from mdb import models
+    Session, _, models = init_db(f'postgresql://{db_user}:{db_pass}@{db_host}/{db_name}')
     return DataAccessObject(Session(), models)
 
 
-def test_add(dac):
-    dac.add('fragment', {'smiles': 'C1ccccc1'})
-    dac.session.commit()
+def test_add(dao):
+    dao.add('fragment', {'smiles': 'C1ccccc1'})
+    dao.session.commit()
 
 
-def test_get(dac):
-    query = dac.get('fragment')
+def test_get(dao):
+    query = dao.get('fragment')
     assert query[0].smiles == 'C1ccccc1'
 
 
-def test_update(dac):
-    query = dac.get('fragment')
-    dac.update('fragment', {'smiles': 'CCC=C'}, query[0].uuid)
-    dac.session.commit()
-    query = dac.get('fragment')
+def test_update(dao):
+    query = dao.get('fragment')
+    dao.update('fragment', {'smiles': 'CCC=C'}, query[0].uuid)
+    dao.session.commit()
+    query = dao.get('fragment')
     assert query[0].smiles == 'CCC=C'
 
 
-def test_delete(dac):
-    query = dac.get('fragment')
-    dac.delete('fragment', query[0].uuid)
-    dac.session.commit()
-    query = dac.get('fragment')
+def test_delete(dao):
+    query = dao.get('fragment')
+    dao.delete('fragment', query[0].uuid)
+    dao.session.commit()
+    query = dao.get('fragment')
     assert len(query) == 0
 
 
-def test_rollback(dac):
-    dac.add('fragment', {'smiles': 'C1cc(=C)ccc1'})
-    dac.add('fragment', {'smiles': 'C=CCC'})
-    dac.add('fragment', {'smiles': 'CC=CC'})
-    dac.add('fragment', {'smiles': 'C#CCCC'})
-    dac.session.commit()
-    dac.rollback(before=datetime(1979, 12, 12, 12, 12, 12))
-    dac.session.commit()
-    query = dac.get('fragment')
+def test_rollback(dao):
+    dao.add('fragment', {'smiles': 'C1cc(=C)ccc1'})
+    dao.add('fragment', {'smiles': 'C=CCC'})
+    dao.add('fragment', {'smiles': 'CC=CC'})
+    dao.add('fragment', {'smiles': 'C#CCCC'})
+    dao.session.commit()
+    dao.rollback(before=datetime(1979, 12, 12, 12, 12, 12))
+    dao.session.commit()
+    query = dao.get('fragment')
     assert len(query) == 0
