@@ -1,20 +1,15 @@
 import click
+import coloredlogs
 
 from . import admin as _admin
-
-
-def abort_if_false(ctx, param, value):
-    if not value:
-        ctx.abort()
 
 @click.group()
 def cli():
     pass
 
 @cli.group()
-@click.pass_context
-def admin(ctx):
-    
+def admin():
+    pass    
     
 
 @cli.command()
@@ -58,4 +53,5 @@ def drop_db(user, password, hostname, db_name):
 
 
 if __name__ == '__main__':
+    coloredlogs.install('INFO')
     cli()
