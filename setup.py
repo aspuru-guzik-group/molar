@@ -10,6 +10,8 @@ requirements = [
     "six==1.14.0",
     "SQLAlchemy==1.3.12",
     "tqdm==4.41.1",
+    "paramiko==2.7.1",
+    "coloredlogs==10.0",
 ]
 
 setup(
