@@ -12,6 +12,7 @@ requirements = [
     "tqdm==4.41.1",
     "paramiko==2.7.1",
     "coloredlogs==10.0",
+    "toml==0.10.0"
 ]
 
 setup(
