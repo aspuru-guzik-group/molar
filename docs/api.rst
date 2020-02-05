@@ -2,4 +2,14 @@ API Reference
 =============
 
 .. autoclass:: mdb.MDBClient
-   :members:
+    :show-inheritance:
+    :members:
+    :inherited-members:
+    :undoc-members:
+
+.. autoclass:: mdb.mapper.SchemaMapper
+    :members:
+    :undoc-members:
+
+.. autoclass:: mdb.client.DataAccessObject
+    :members:

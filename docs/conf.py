@@ -17,8 +17,8 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'Goldmine'
-copyright = '2019, Theophile Gaudin'
+project = 'MDBClient'
+copyright = '2019-2020, Theophile Gaudin'
 author = 'Theophile Gaudin'
 
 
