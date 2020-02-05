@@ -59,7 +59,7 @@ def test_add_calculation(mapper):
 def test_add_xy_data_calculation(mapper):
     units = mapper.dao.get('data_unit')
     calc = mapper.dao.get('calculation')
-    mapper.add_xy_data_calculation(calc[0].uuid, [1, 2, 3, 4], [0, 4, 3, 1],
+    mapper.add_xy_data_calculation(calc[0].uuid, 'test', [1, 2, 3, 4], [0, 4, 3, 1],
             units[0].uuid, units[0].uuid)
 
 

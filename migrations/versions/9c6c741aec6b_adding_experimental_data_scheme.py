@@ -134,6 +134,7 @@ def upgrade():
         sa.Column('updated_on', sa.DateTime, nullable=False),
         sa.Column('experiment_id', pgsql.UUID),
         sa.Column('calculation_id', pgsql.UUID),
+        sa.Column('name', sa.Text, nullable=False),
         sa.Column('x', pgsql.ARRAY(sa.Float), nullable=False),
         sa.Column('y', pgsql.ARRAY(sa.Float), nullable=False),
         sa.Column('x_units_id', pgsql.UUID),

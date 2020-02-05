@@ -111,17 +111,17 @@ class SchemaMapper:
         self.dao.session.commit()
         return event
 
-    def add_experiment(self, synth_uuid, x, y, x_units_uuid, y_units_uuid,
+    def add_experiment(self, synth_uuid, data_name, x, y, x_units_uuid, y_units_uuid, 
             machine_uuid, metadata, notes):
         data = {'synth_id': synth_uuid, 
                 'metadata': metadata,
                 'notes': notes}
         event = self.dao.add('experiment', data)
         self.dao.session.commit()
-        self.add_xy_data_experiment(event.uuid, x, y, x_units_uuid, y_units_uuid)
+        self.add_xy_data_experiment(event.uuid, data_name, x, y, x_units_uuid, y_units_uuid)
         return event
 
-    def add_xy_data_experiment(self, experiment_uuid, x, y, x_units_uuid, y_units_uuid):
+    def add_xy_data_experiment(self, experiment_uuid, name, x, y, x_units_uuid, y_units_uuid):
         data = {'experiment_uuid': experiment_uuid,
                 'x': x,
                 'y': y,
@@ -131,9 +131,10 @@ class SchemaMapper:
         self.dao.session.commit()
         return event
 
-    def add_xy_data_calculation(self, calculation_uuid, x, y, x_units_uuid,
+    def add_xy_data_calculation(self, calculation_uuid, name, x, y, x_units_uuid,
             y_units_uuid):
         data = {'calculation_uuid': calculation_uuid,
+                'name': name,
                 'x': x,
                 'y': y,
                 'x_units_uuid': x_units_uuid,
@@ -147,5 +148,3 @@ class SchemaMapper:
         event = self.dao.add('data_unit', data)
         self.dao.session.commit()
         return event
-
-

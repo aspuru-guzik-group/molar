@@ -3,9 +3,12 @@ from functools import partial
 import pandas as pd
 from tqdm import tqdm
 from sqlalchemy import and_
+from paramiko import SSHClient, ProxyCommand
+from threading import Thread
 import psycopg2
 
-from . import database
+from . import ssh
+from . import database as db
 from . import mapper
 
 
@@ -21,9 +24,9 @@ class MDBClient(mapper.SchemaMapper):
     :param use_tqdm: how a tqdm progressbar if set to True. (boolean, optional)
 
     """
-    def __init__(self, hostname, username, password, database_name, use_tqdm=True):
-        self.sql_url = f"postgresql://{username}:{password}@{hostname}/{database_name}"
-        Session, engine, models = database.init_db(self.sql_url)
+    def __init__(self, hostname, username, password, database, use_tqdm=True):
+        self.sql_url = f"postgresql://{username}:{password}@{hostname}/{database}"
+        Session, engine, models = db.init_db(self.sql_url)
         self.session = Session()
         self.engine = engine
         self.models = models
@@ -149,9 +152,9 @@ class MDBClient(mapper.SchemaMapper):
         """
         This method serves to update specifics rows of a table.
 
-        :table_name (str): name of the table
-        :data (pandas.DataFrame, list or dict): data to update
-        :uuid (str or list): if data does not contains the uuid, it must be specified.
+        :param table_name (str): name of the table
+        :param data (pandas.DataFrame, list or dict): data to update
+        :param uuid (str or list): if data does not contains the uuid, it must be specified.
 
         Example:
 
@@ -197,8 +200,8 @@ class MDBClient(mapper.SchemaMapper):
         """
         This method deletes data from the database.
 
-        :table_name (str): name of the table
-        :uuid (str, List(str)): uuid to remove
+        :param table_name (str): name of the table
+        :param uuid (str, List(str)): uuid to remove
 
         .. code-block:: python
             
@@ -224,7 +227,7 @@ class MDBClient(mapper.SchemaMapper):
         Performs a rollback on the database. For now, it only supports to be
         restored to a prior date.
 
-        :before (datetime.datetime): prior date.
+        :param before (datetime.datetime): prior date.
         
         Example:
 
@@ -238,11 +241,32 @@ class MDBClient(mapper.SchemaMapper):
         self.dao.rollback(before)
 
 
+class MDBClientWithSSH(MDBClient):
+    """
+    This version of the client creates an SSH tunnel before connecting to the
+    database. This is useful if you are not in the same network as the
+    database.
+
+    """
+    def __init__(self, hostname, username, password, database,
+            ssh_username, ssh_hostname, ssh_keyfile, ssh_proxy, use_tqdm=True):
+        transport = ssh.connect(ssh_username, ssh_hostname, ssh_keyfile, ssh_proxy)
+        forward_server = ssh.tunnel_factory(5432, 'localhost', 5432, transport)
+        server_thread = Thread(target=forward_server.serve_forever)
+        server_thread.daemon = True
+        server_thread.start()
+        self.ssh_server = forward_server
+        
+        super().__init__(hostname, username, password, database)
+        
+    def __del__(self):
+        super().__del__()
+        self.ssh_server.shutdown()
+
+
 class DataAccessObject:
     """
-    Data Access Object.
-
-    Define the low level interactions between MDBClient and the database. It is
+    Defines the low level interactions between MDBClient and the database. It is
     not meant to be used on its own.
 
     :session: (sqlalchemy.orm.session.Session)
@@ -256,10 +280,10 @@ class DataAccessObject:
         """
         Reads data from a table
 
-        :table_name (str):
-        :filters (list):
-        :limit (int or None):
-        :offset (int or None):
+        :param table_name (str):
+        :param filters (list):
+        :param limit (int or None):
+        :param offset (int or None):
         """
         if not isinstance(table_name, list):
             table_name = [table_name]
@@ -293,14 +317,11 @@ class DataAccessObject:
         
     def add(self, table_name, data):
         """
-        Add data to the database. This corresponds to a 'create' event on the
+        Adds data to the database. This corresponds to a 'create' event on the
         eventstore with a 'type' of table_name
 
-        Parameters:
-        -----------
-
-            * table_name
-            * data
+        :param table_name:
+        :param data:
         """
         params = {'event': 'create',
                   'type': table_name,
@@ -311,14 +332,11 @@ class DataAccessObject:
 
     def delete(self, table_name, uuid):
         """
-        Delete data from the databse. This corresponds to a 'delete' event on
+        Deletes data from the databse. This corresponds to a 'delete' event on
         the eventstore with a 'type' of table_name
 
-        Parameters:
-        -----------
-
-            * table_name
-            * uuid
+        :param table_name:
+        :param uuid:
         """
         params = {'event': 'delete',
                   'type': table_name,
@@ -329,15 +347,12 @@ class DataAccessObject:
 
     def update(self, table_name, data, uuid):
         """
-        Update data from the database. This corresponds to an 'update' event on
+        Updates data from the database. This corresponds to an 'update' event on
         the eventstore with a 'type' of table_name
 
-        Parameters:
-        -----------
-
-            * table_name
-            * data
-            * uuid
+        :param table_name:
+        :param data:
+        :param uuid:
         """
         params = {'event': 'update',
                   'type': table_name,
@@ -352,10 +367,7 @@ class DataAccessObject:
         Rollback the database. This corresponds to a 'rollback' event on the
         eventstore. For now, until rollback to a specific date is available.
 
-        Parameters:
-        -----------
-
-            * before: (datetime.dateime)
+        :param before: (datetime.dateime)
         """
 
         params = {'event': 'rollback',
@@ -363,60 +375,3 @@ class DataAccessObject:
         event = self.models.eventstore(**params)
         self.session.add(event)
         return event
-
-
-class ArgumentsFetcher:
-    def __init__(self, func, dao, convert_smiles, convert_synth_hid, convert_lab_short_name):
-        self.func = func
-        self.dao = dao
-        
-        self.subs_mapper = {}
-
-        if convert_smiles:
-            self.subs_mapper['fragment_uuid'] = partial(self.molecule_to_uuid, table_name='fragment')
-            self.subs_mapper['molecule_uuid'] = partial(self.molecule_to_uuid, table_name='molecule')
-            self.subs_mapper['targeted_molecule_uuid'] = partial(self.molecule_to_uuid, table_name='molecule')
-        if convert_synth_hid:
-            self.subs_mapper['synth_uuid'] = self.synth_hid_to_uuid
-        if convert_lab_short_name:
-            self.subs_mapper['lab_uuid'] = self.lab_short_name_to_uuid
-
-    def __call__(self, *args, **kwargs):
-        # Check kwargs
-        for k, v in kwargs.items():
-            if k in self.subs_mapper.keys():
-                kwargs[k] = self.subs_mapper[k](self.dao, v)
-
-        varnames = self.func.__code__.co_varnames
-        
-        new_args = []
-        for v, a in zip(varnames, args):
-            if v in self.subs_mapper.keys():
-                a = self.subs_mapper[v](self.dao, a)
-            new_args.append(a)
-
-        return self.func(*new_args, **kwargs)
-
-    @staticmethod
-    def molecule_to_uuid(dao, smiles, table_name):
-        # TODO: check if smiles is a uuid
-        model = getattr(dao.models, table_name)
-        res = dao.get(table_name, filters=[model.smiles == smiles])
-        assert len(res) == 1
-        if res is None:
-            res = dao.add(table_name, {'smiles': smiles})
-            dao.session.commit()
-            return res.uuid
-        return res[0].uuid
-
-    @staticmethod
-    def synth_hid_to_uuid(dao, synth_hid):
-        res = dao.get('synthesis', filters=[dao.models.synthesis.synth_hid == synth_hid])
-        assert len(res) == 1
-        return res[0].uuid
-
-    @staticmethod
-    def lab_short_name_to_uuid(dao, lab_short_name):
-        res = dao.get('lab', filters=[dao.models.lab.short_name == lab_short_name])
-        assert len(res) == 1
-        return res[0].uuid
