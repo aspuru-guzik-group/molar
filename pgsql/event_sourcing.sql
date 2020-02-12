@@ -34,9 +34,9 @@ BEGIN
                      INNER JOIN public.synthesis_machine AS sm 
                      ON sm.lab_id = lab.uuid 
                      WHERE sm.uuid = synth_machine_id) || '_';
-        synth_hid = synth_hid || (SELECT EXTRACT(MONTH FROM ts)) || '-' || 
-                                 (SELECT EXTRACT(DAY FROM ts))   || '-' ||
-                                 (SELECT EXTRACT(YEAR FROM ts));
+        synth_hid = synth_hid || (SELECT EXTRACT(YEAR FROM ts)) || '-' || 
+                                 (SELECT EXTRACT(MONTH FROM ts))   || '-' ||
+                                 (SELECT EXTRACT(DAY FROM ts));
         synth_hid = synth_hid || '_' ||
         (SELECT COUNT(*) FROM public.synthesis AS syn 
         INNER JOIN public.synthesis_machine AS sm ON syn.machine_id = sm.uuid 
