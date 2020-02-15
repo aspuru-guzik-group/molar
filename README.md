@@ -29,7 +29,7 @@ $ git clone git@gitlab.com:tgaudin/goldmine.git
 $ cd goldmine && pip install -e .
 ```
 
-## Usaging the client
+## Using the client
 
 A more complete documentation is available [here](http://www.cs.toronto.edu/~tgaudin/madnessdb/)
 (user: `madness`, pw: `darpa-madness`)
@@ -37,7 +37,6 @@ A more complete documentation is available [here](http://www.cs.toronto.edu/~tga
 If you are in the matterlab's network:
 
 ```python
-
 from mdb import MDBClient
 
 client = MDBClient(hostname='mdb.matter.sandbox', 
@@ -52,7 +51,6 @@ client.get('molecule')
 If you are not in the matterlab's network
 
 ```python
-
 from mdb import MDBClientWithSSH
 
 client = MDBClientWithSSH(hostname='localhost',
