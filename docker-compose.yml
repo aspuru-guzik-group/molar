@@ -3,11 +3,13 @@ version: '3'
 services:
     postgres:
       restart: always
-      image: 'postgres:11.1'
+      image: 'tgaudin/postgresql-pgtap'
       ports:
         - "5432:5432"
       volumes:
         - "./data:/var/lib/postgresql/data"
+      environment:
+        POSTGRES_HOST_AUTH_METHOD: trust
     docs:
       restart: always
       image: 'nginx:mainline-alpine'
