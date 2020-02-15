@@ -59,7 +59,7 @@ test-backend:
       - cd pgtap-1.1.0 && make && make install
       - cpan TAP::Parser::SourceHandler::pgTAP
       - pip install alembic psycopg2-binary
-      - /bin/bash ./pgsql/setup.sh
+      - cd .. && ./pgsql/setup.sh
       - alembic -c tests/alembic.ini.test upgrade head
       - psql -h ${DB_HOST} -U ${DB_USER} -c 'create extension if not exists pgtap';
     script:
@@ -96,7 +96,7 @@ schemacrawler:
       - alembic -c tests/alembic.ini.test upgrade head
     script:
       - cd schemacrawler-15.06.01-distribution && ./_schemacrawler/schemacrawler.sh -server=postgresql -user=postgres -host=postgres -database=molecdb -password='' -c=schema -fmt=scdot -o=../schema.graphviz
-      - cd && dot -Tpng schema.graphviz -o schema.png
+      - cd .. && dot -Tpng schema.graphviz -o schema.png
     artifacts:
       paths:
       - schema.graphviz
