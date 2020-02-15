@@ -63,7 +63,7 @@ test-backend:
       - alembic -c tests/alembic.ini.test upgrade head
       - psql -h ${DB_HOST} -U ${DB_USER} -c 'create extension if not exists pgtap';
     script:
-      - pg_prove --dbname ${DB_NAME} pgsql/tests/test_eventsourcing.sql -h ${DB_HOST} -p ${PGPASSWORD}
+      - pg_prove --dbname ${DB_NAME} pgsql/tests/test_eventsourcing.sql -h ${DB_HOST} -p ${PGPASSWORD} -U ${DB_USER}
  
 
 schemacrawler:
