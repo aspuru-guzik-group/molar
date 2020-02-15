@@ -35,7 +35,7 @@ script_location = ./migrations
 # are written from script.py.mako
 # output_encoding = utf-8
 
-sqlalchemy.url = postgresql://postgres@postgres/mdb
+sqlalchemy.url = postgresql://postgres@tgaudin-postgresql-pgtap/mdb
 
 
 [post_write_hooks]
