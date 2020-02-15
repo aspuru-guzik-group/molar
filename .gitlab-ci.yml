@@ -3,8 +3,7 @@ stages:
   - doc
 
 services:
-  - name: 'tgaudin/postgresql-pgtap'
-    alias: 'postgres'
+  - tgaudin/postgresql-pgtap:latest
 
 variables:
     POSTGRES_HOST_AUTH_METHOD: trust
@@ -14,7 +13,7 @@ test-client:
     when: always
     image: continuumio/miniconda3:latest
     variables:
-        DB_HOST: "postgres"
+        DB_HOST: "tgaudin-postgresql-pgtap"
         DB_USER: "postgres"
         PGPASSWORD: ""
         DB_NAME: "mdb"
@@ -38,7 +37,7 @@ test-backend:
     when: always
     image: 'alpine:3.7'
     variables:
-        DB_HOST: "postgres"
+        DB_HOST: "tgaudin-postgresql-pgtap"
         DB_USER: "postgres"
         PGPASSWORD: ""
         DB_NAME: "mdb"
@@ -47,8 +46,8 @@ test-backend:
       - apk upgrade
       - apk add --no-cache bash
       - apk add --no-cache --virtual=build-dependencies unzip
-      - apk add --no-cache curl wget python3 python3-dev
-      - apk add --no-cache graphviz postgresql-dev postgresql-client
+      - apk add --no-cache wget python3 python3-dev
+      - apk add --no-cache postgresql-dev postgresql-client
       - apk add --no-cache gcc musl-dev build-base perl-dev
       - python3 -m ensurepip
       - pip3 install --upgrade pip setuptools
@@ -72,7 +71,7 @@ schemacrawler:
     when: always
     image: 'alpine:3.7'
     variables:
-        DB_HOST: "postgres"
+        DB_HOST: "tgaudin-postgresql-pgtap"
         DB_USER: "postgres"
         PGPASSWORD: ""
         DB_NAME: "mdb"
@@ -97,8 +96,8 @@ schemacrawler:
       - alembic -c tests/alembic.ini.test upgrade head
     script:
       - cd schemacrawler-15.06.01-distribution && ./_schemacrawler/schemacrawler.sh -server=postgresql -user=postgres -host=postgres -database=molecdb -password='' -c=schema -fmt=scdot -o=schema.graphviz
+      - cd .. && mv schemacrawler-15.06.01-distribution/schema.graphviz .
       - dot -Tpng schema.graphviz -o schema.png
-      - mv schemacrawler-15.06.01-distribution/schema.* .
     artifacts:
       paths:
       - schema.graphviz
