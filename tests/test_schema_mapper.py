@@ -13,7 +13,7 @@ def mapper():
     db_host = os.getenv("DB_HOST") or "localhost"
     db_user = os.getenv("DB_USER") or "postgres"
     db_pass = os.getenv("DB_PASS") or ""
-    db_name = os.getenv("DB_NAME") or "molecdb"
+    db_name = os.getenv("DB_NAME") or "mdb"
     Session, _, models = init_db(f'postgresql://{db_user}:{db_pass}@{db_host}/{db_name}')
     dao = DataAccessObject(Session(), models)
     return SchemaMapper(dao)
@@ -78,16 +78,16 @@ def test_add_synthesis(mapper):
     mapper.add_synthesis(machine[0].uuid, mol[0].uuid, '<xdl></xdl>', 'Blablabla')
 
 
-def test_add_synth_molecule(mapper):
+def test_add_synth_molecule_outcome(mapper):
     synth = mapper.dao.get('synthesis')
     mol = mapper.dao.get('molecule')
-    mapper.add_synth_molecule(synth[0].uuid, mol[0].uuid, 1.0)
+    mapper.add_synth_molecule_outcome(synth[0].uuid, mol[0].uuid, 1.0)
 
 
-def test_add_synth_fragment(mapper):
+def test_add_synth_unreacted_fragment(mapper):
     synth = mapper.dao.get('synthesis')
     mol = mapper.dao.get('fragment')
-    mapper.add_synth_fragment(synth[0].uuid, mol[0].uuid, 1.0)
+    mapper.add_synth_unreacted_fragment(synth[0].uuid, mol[0].uuid, 1.0)
 
 
 def test_add_experiment_type(mapper):
@@ -104,9 +104,7 @@ def test_add_experiment(mapper):
     machine = mapper.dao.get('experiment_machine')
     synth = mapper.dao.get('synthesis')
     unit = mapper.dao.get('data_unit')
-    mapper.add_experiment(synth[0].uuid, [1, 2, 3, 4], [1, 2, 3, 4],
-            unit[0].uuid, unit[0].uuid, machine[0].uuid, {'concentration': '10M/L'},
-            'blablabla') 
+    mapper.add_experiment(synth[0].uuid, machine[0].uuid, {'concentration': '10M/L'}, 'blablabla') 
 
     mapper.dao.rollback(before=datetime(1979, 12, 12, 12, 12, 12))
     mapper.dao.session.commit()
