@@ -679,7 +679,7 @@ ALTER TABLE ONLY public.calculation
 --
 
 ALTER TABLE ONLY public.molecule_fragment
-    ADD CONSTRAINT lnk_fragment_molecule FOREIGN KEY (fragment_id) REFERENCES public.fragment(uuid) MATCH FULL ON UPDATE CASCADE;
+    ADD CONSTRAINT lnk_fragment_molecule FOREIGN KEY (fragment_id) REFERENCES public.fragment(uuid) MATCH FULL ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --
@@ -695,7 +695,7 @@ ALTER TABLE ONLY public.conformation
 --
 
 ALTER TABLE ONLY public.molecule_fragment
-    ADD CONSTRAINT lnk_molecule_fragment FOREIGN KEY (molecule_id) REFERENCES public.molecule(uuid) MATCH FULL ON UPDATE CASCADE;
+    ADD CONSTRAINT lnk_molecule_fragment FOREIGN KEY (molecule_id) REFERENCES public.molecule(uuid) MATCH FULL ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --
