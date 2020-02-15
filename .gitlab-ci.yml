@@ -3,9 +3,13 @@ stages:
   - doc
 
 services:
-  - postgres
+  - name: 'tgaudin/postgresql-pgtap'
+    alias: 'postgres'
 
-job:
+variables:
+    POSTGRES_HOST_AUTH_METHOD: trust
+
+test-client:
     stage: test
     when: always
     image: continuumio/miniconda3:latest
@@ -13,10 +17,10 @@ job:
         DB_HOST: "postgres"
         DB_USER: "postgres"
         PGPASSWORD: ""
-        DB_NAME: "molecdb"
+        DB_NAME: "mdb"
     before_script:
-      - conda create -n molecdb python=3.6
-      - source activate molecdb
+      - conda create -n mdb python=3.6
+      - source activate mdb
       - apt-get update
       - apt-get upgrade -y
       - apt-get install -y postgresql-client libxrender1
@@ -29,6 +33,40 @@ job:
       - coverage run --source mdb -m py.test
       - coverage report
 
+test-backend:
+    stage: test
+    when: always
+    image: 'alpine:3.7'
+    variables:
+        DB_HOST: "postgres"
+        DB_USER: "postgres"
+        PGPASSWORD: ""
+        DB_NAME: "mdb"
+    before_script:
+      - apk update 
+      - apk upgrade
+      - apk add --no-cache bash
+      - apk add --no-cache --virtual=build-dependencies unzip
+      - apk add --no-cache curl wget python3 python3-dev
+      - apk add --no-cache graphviz postgresql-dev postgresql-client
+      - apk add --no-cache gcc musl-dev build-base perl-dev
+      - python3 -m ensurepip
+      - pip3 install --upgrade pip setuptools
+      - rm -r /usr/lib/python*/ensurepip
+      - if [ ! -e /usr/bin/pip ]; then ln -s pip3 /usr/bin/pip ; fi 
+      - if [[ ! -e /usr/bin/python ]]; then ln -sf /usr/bin/python3 /usr/bin/python; fi 
+      - wget 'http://api.pgxn.org/dist/pgtap/1.1.0/pgtap-1.1.0.zip' -q && \
+      - unzip pgtap-1.1.0.zip
+      - cd pgtap-1.1.0 && make && make install
+      - cpan TAP::Parser::SourceHandler::pgTAP
+      - pip install alembic psycopg2-binary
+      - ./pgsql/setup.sh
+      - alembic -c tests/alembic.ini.test upgrade head
+      - psql -h ${DB_HOST} -U ${DB_USER} -c 'create extension if not exists pgtap';
+    script:
+      - pg_prove --dbname ${DB_NAME} pgsql/tests/test_eventsourcing.sql -h ${DB_HOST} -p ${PGPASSWORD}
+ 
+
 schemacrawler:
     stage: doc
     when: always
@@ -37,7 +75,7 @@ schemacrawler:
         DB_HOST: "postgres"
         DB_USER: "postgres"
         PGPASSWORD: ""
-        DB_NAME: "molecdb"
+        DB_NAME: "mdb"
     before_script:
       - apk update 
       - apk upgrade
@@ -60,7 +98,8 @@ schemacrawler:
     script:
       - cd schemacrawler-15.06.01-distribution && ./_schemacrawler/schemacrawler.sh -server=postgresql -user=postgres -host=postgres -database=molecdb -password='' -c=schema -fmt=scdot -o=schema.graphviz
       - dot -Tpng schema.graphviz -o schema.png
+      - mv schemacrawler-15.06.01-distribution/schema.* .
     artifacts:
       paths:
-      - schemacrawler-15.06.01-distribution/schema.graphviz
-      - schemacrawler-15.06.01-distribution/schema.png
+      - schema.graphviz
+      - schema.png

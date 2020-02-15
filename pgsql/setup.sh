@@ -3,7 +3,7 @@
 DB_HOST=${DB_HOST:-localhost}
 DB_USER=${DB_USER:-postgres}
 DB_PASSWD=${PGPASSWORD}
-DB_NAME=${DB_NAME:-molecdb}
+DB_NAME=${DB_NAME:-mdb}
 
 
 setup_database() {
