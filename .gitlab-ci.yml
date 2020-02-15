@@ -92,7 +92,7 @@ schemacrawler:
       - wget https://github.com/schemacrawler/SchemaCrawler/releases/download/v15.06.01/schemacrawler-15.06.01-distribution.zip
       - unzip schemacrawler-15.06.01-distribution.zip
       - pip install alembic psycopg2-binary
-      - ./pgsql/setup.sh
+      - /bin/sh ./pgsql/setup.sh
       - alembic -c tests/alembic.ini.test upgrade head
     script:
       - cd schemacrawler-15.06.01-distribution && ./_schemacrawler/schemacrawler.sh -server=postgresql -user=postgres -host=postgres -database=molecdb -password='' -c=schema -fmt=scdot -o=schema.graphviz
