@@ -72,10 +72,6 @@ declare
     hid character varying(16) := '';
     rec record;
 begin
-    if new.uuid is null then
-        new.uuid := uuid_generate_v4();
-    end if;
-
     for rec in (
         select columns.column_name as col_name,
                  columns.data_type as col_type,
@@ -85,6 +81,7 @@ begin
         where table_schema = 'public' and table_name = new.type 
     )
     loop
+        continue when rec.col_name = 'id';
         if new.data ? rec.col_name = true then
             q1 = q1 || format(', %I', rec.col_name);
             case rec.col_type
@@ -96,24 +93,36 @@ begin
                 q2 = q2 || format(', cast( %L as float8[])',
                                   (select array_agg(arr::text)
                                      from jsonb_array_elements((new.data->>rec.col_name)::jsonb) arr)::text);
+            when 'character varying' then
+                q2 = q2 || format(', cast( %L as character varying(%s))',
+                                  new.data->>rec.col_name,
+                                  (select character_maximum_length 
+                                     from information_schema.columns 
+                                    where table_schema = 'public'
+                                      and   table_name = new.type
+                                      and  column_name = rec.col_name));
             else
-                q2 = q2 || format(', cast( %L as %I )',
+                q2 = q2 || format(', cast( %L as %s )',
                                   new.data->>rec.col_name,
                                   rec.col_type);
             end case;
         else
-           if rec.col_name = 'created_on' or rec.col_name = 'created_on' then
+           if rec.col_name = 'created_on' or rec.col_name = 'updated_on' then
                 q1 = q1 || format(', %I', rec.col_name);
                 q2 = q2 || format(', cast( %L as timestamp without time zone )', new.timestamp);
-            elsif new.type = 'synthesis' and rec.col_name = 'hid' then
+           elsif new.type = 'synthesis' and rec.col_name = 'hid' then
                 -- synthesis has a special field - hid that is a human id generated automatically
                 q1 = q1 || format(', %I', rec.col_name);
                 hid = (select public.create_synthesis_hid(
                         (new.data->>'machine_id')::uuid,
                          new.timestamp));
-                q2 = q2 || format(', cast( %L as %I )',
+                q2 = q2 || format(', cast( %L as character varying(%s) )',
                                   hid,
-                                  rec.col_type);
+                                  (select character_maximum_length
+                                     from information_schema.columns
+                                    where table_schema = 'public'
+                                      and   table_name = new.type
+                                      and  column_name = rec.col_name));
                 new.data = jsonb_insert(new.data, '{hid}', quote_ident((hid::text))::jsonb);
             end if;
         end if;
@@ -144,6 +153,7 @@ begin
          where table_schema = 'public' and table_name = new.type
     )
     loop
+        continue when rec.col_name = 'id';
         if new.data ? rec.col_name = true then
             case
             when rec.col_type = 'user-defined' then
@@ -163,8 +173,17 @@ begin
                                   rec.col_name, 
                                   (select array_agg(arr::text)
                                      from jsonb_array_elements((new.data->>rec.col_name)::jsonb) arr)::text);
+            when rec.col_type = 'character varying' then
+                q1 = q1 || format(', %I = cast( %L as character varying(%s) )',
+                                  rec.col_name,
+                                  new.data->>rec.col_name,
+                                  (select character_maximum_length
+                                     from information_schema.columns
+                                    where table_schema = 'public'
+                                      and   table_name = new.type
+                                      and  column_name = rec.col_name));
             else
-                q1 = q1 || format(', %I = cast( %L as %I )',
+                q1 = q1 || format(', %I = cast( %L as %s )',
                                   rec.col_name, new.data->>rec.col_name, rec.col_type);
             end case;
         else
@@ -211,7 +230,7 @@ begin
               from sourcing.eventstore 
           group by "uuid", "type" 
             having not (array_agg("event") @> '{delete}' 
-                or "uuid" is null)
+                    or "uuid" is null)
           order by min("eventstore"."id") desc
     );
 
@@ -245,12 +264,6 @@ language plpgsql;
 create or replace function sourcing."on_event"( ) 
 returns trigger as $function$
 declare
-    id bigint;
-    data_type character varying(2044);
-    query_1 text := '';
-    query_2 text := '';
-    hid character varying(16) := '';
-    rec record;
     count INT := 1;
 begin
     if new.timestamp is null then
@@ -259,6 +272,9 @@ begin
 
     case new.event
     when 'create' then
+        if new.uuid is null then
+            new.uuid := uuid_generate_v4();
+        end if;
         execute (select sourcing.on_create_query(new));
     when 'update' then
         execute (select sourcing.on_update_query(new));

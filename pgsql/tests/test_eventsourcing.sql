@@ -15,7 +15,9 @@ create table public.test (
     "uuid" uuid,
     "test" text,
     "test_arr" float8[],
-    "test_json" jsonb
+    "test_json" jsonb,
+    "test_varchar" character varying (3),
+    "test_int" integer
 );
 
 
@@ -25,12 +27,20 @@ select plan(5);
 -- testing on_create_query
 insert into sourcing.eventstore 
        (event,     type,   data)
-values ('create', 'test', '{"test": "asdfasdf", "test_arr": [0, 1, 2], "test_json": {"test": "test"}}'::jsonb);
+values ('create', 'test', '{"test": "asdfasdf", "test_arr": [0, 1, 2], "test_json": {"test": "test"}, "test_varchar": "asd", "test_int": 0}'::jsonb);
 
 select results_eq(
-    'select test, test_arr, test_json from public.test',
+    'select test, 
+            test_arr, 
+            test_json, 
+            test_varchar,
+            test_int from public.test',
     $$
-        VALUES ('asdfasdf', '{0, 1, 2}'::float8[], '{"test": "test"}'::jsonb)
+        VALUES ('asdfasdf', 
+                '{0, 1, 2}'::float8[], 
+                '{"test": "test"}'::jsonb, 
+                'asd'::character varying(3),
+                0::integer)
     $$,
     'create event failed!'
 );
@@ -40,15 +50,19 @@ select results_eq(
 insert into sourcing.eventstore 
        (event,     type,   data, uuid)
 values ('update', 'test', 
-        '{"test": "asdf", "test_arr": [1, 0, 2], "test_json": {"test": "asdf"}}'::jsonb,
-        (select uuid from test)     
+        '{"test": "asdf", "test_arr": [1, 0, 2], "test_json": {"test": "asdf"}, "test_varchar": "fds", "test_int": 1}'::jsonb,
+        (select uuid from test)
 );
 
 
 select results_eq(
-    'select test, test_arr, test_json from public.test',
+    'select test, test_arr, test_json, test_varchar, test_int from public.test',
     $$
-        values ('asdf', '{1, 0, 2}'::float8[], '{"test": "asdf"}'::jsonb)
+        values ('asdf', 
+                '{1, 0, 2}'::float8[],
+                '{"test": "asdf"}'::jsonb,
+                'fds'::character varying(3),
+                1::integer)
     $$,
     'create event failed!'
 );
