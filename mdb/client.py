@@ -80,22 +80,22 @@ class MDBClient(mapper.SchemaMapper):
             del df['_sa_instance_state']
         return df
     
-    def get_uuid(self, table_name, **kwargs):
+    def get_id(self, table_name, **kwargs):
         """
-        This method helps finding the uuid of a specific item in the database.
+        This method helps finding the id of a specific item in the database.
         it will be usefule when adding data with relationships.
 
         :param table_name (str): name of the table
         :param kwargs: keyword arguments which will be used to build filters. Those 
         keywords have to correspond to existing column in the table.
 
-        :returns: The uuid as a string. If the objects can't be find, a
+        :returns: The id as a string. If the objects can't be find, a
         exception is raised.
 
         .. code-block:: python
             
             client = MDBCLient('localhost', 'postgres', '', 'madness')
-            molecule_uuid = client.get_uuid('molecule', smiles='C1=CC=CC=C1')
+            molecule_id = client.get_id('molecule', smiles='C1=CC=CC=C1')
 
         """
         model = getattr(self.models, table_name)
@@ -109,13 +109,13 @@ class MDBClient(mapper.SchemaMapper):
         q = self.get(table_name, filters=filters, return_df=False, limit=1)
         if q is None:
             raise ValueError(f'No row with the specified filters where found.  Filters: {filters}')
-        return q.uuid
+        return q.id
 
     def add(self, table_name, data):
         """
         This method can add data to any existing table in the database. This
         method will returns the events created in the eventstore which contains
-        some information about the object such as its uuid.
+        some information about the object such as its id.
 
         :param table_name: name of the table (string)
         :param data: data to add (list, pandas.DataFrame or dict)
@@ -148,13 +148,13 @@ class MDBClient(mapper.SchemaMapper):
         self.session.commit()
         return events
 
-    def update(self, table_name, data, uuid=None):
+    def update(self, table_name, data, id=None):
         """
         This method serves to update specifics rows of a table.
 
         :param table_name (str): name of the table
         :param data (pandas.DataFrame, list or dict): data to update
-        :param uuid (str or list): if data does not contains the uuid, it must be specified.
+        :param id (str or list): if data does not contains the id, it must be specified.
 
         Example:
 
@@ -172,11 +172,13 @@ class MDBClient(mapper.SchemaMapper):
         if isinstance(data, list):
             data = pd.DataFrame.from_records(data, exclude=['id', 'updated_on', 'created_on'])
         if not isinstance(data, pd.DataFrame):
-            raise TypeError("lol")
+            raise TypeError((f"Invalid data type! Got {type(data)} "
+                              "but expected either dict, list or "
+                              "pandas.DataFrame"))
 
-        if not uuid:
-            uuid = data['uuid'].tolist()
-            del data['uuid']
+        if not id:
+            id = data['id'].tolist()
+            del data['id']
         
         if 'updated_on' in data:
             del data['updated_on']
@@ -189,33 +191,33 @@ class MDBClient(mapper.SchemaMapper):
             iter = tqdm(iter)
 
         events = []
-        for i, (record, id) in enumerate(zip(iter, uuid)):
+        for i, (record, id) in enumerate(zip(iter, id)):
             events.append(self.dao.update(table_name, record[1].to_dict(), id))
             if i % 500 == 0:
                 self.session.commit()
         self.session.commit()
         return events
 
-    def delete(self, table_name, uuid):
+    def delete(self, table_name, id):
         """
         This method deletes data from the database.
 
         :param table_name (str): name of the table
-        :param uuid (str, List(str)): uuid to remove
+        :param id (str, List(str)): id to remove
 
         .. code-block:: python
             
             client = MDBClient('localhost', 'postgres', '', 'madness')
             df = client.get('molecule')
-            client.delete('molecule', df['uuid'].tolist())
+            client.delete('molecule', df['id'].tolist())
             
 
         """
-        if isinstance(uuid, str):
-            uuid = [uuid]
+        if isinstance(id, str):
+            id = [id]
 
         events = []
-        for i, id in enumerate(uuid):
+        for i, id in enumerate(id):
             events.append(self.dao.delete(table_name, id))
             if i % 500 == 0:
                 self.session.commit()
@@ -330,34 +332,34 @@ class DataAccessObject:
         self.session.add(event)
         return event
 
-    def delete(self, table_name, uuid):
+    def delete(self, table_name, id):
         """
         Deletes data from the databse. This corresponds to a 'delete' event on
         the eventstore with a 'type' of table_name
 
         :param table_name:
-        :param uuid:
+        :param id:
         """
         params = {'event': 'delete',
                   'type': table_name,
-                  'uuid': uuid}
+                  'uuid': id}
         event = self.models.eventstore(**params)
         self.session.add(event)
         return event
 
-    def update(self, table_name, data, uuid):
+    def update(self, table_name, data, id):
         """
         Updates data from the database. This corresponds to an 'update' event on
         the eventstore with a 'type' of table_name
 
         :param table_name:
         :param data:
-        :param uuid:
+        :param id:
         """
         params = {'event': 'update',
                   'type': table_name,
                   'data': data,
-                  'uuid': uuid}
+                  'uuid': id}
         event = self.models.eventstore(**params)
         self.session.add(event)
         return event

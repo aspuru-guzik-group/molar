@@ -3,6 +3,9 @@ from .client import MDBClient, MDBClientWithSSH
 import toml
 
 
+__version__ = '0.2'
+__author__ = 'Theophile Gaudin'
+
 def load_client_from_config(config_file):
     """
     Loads a configuration file and initialize a client.

@@ -25,7 +25,7 @@ def test_add_fragment(mapper):
 
 def test_add_molecule(mapper):
     fragment = mapper.dao.get('fragment')
-    mapper.add_molecule('abcd', fragment[0].uuid)
+    mapper.add_molecule('abcd', fragment[0].id)
 
 
 def test_add_conformer(mapper):
@@ -33,7 +33,7 @@ def test_add_conformer(mapper):
 
     x = [1.0, 4.5, 2.1, 3.0]
     n = [1, 4, 2, 6, 4]
-    mapper.add_conformer(molecule[0].uuid, x, x, x, n, {'property_xasd': 'lol'})
+    mapper.add_conformer(molecule[0].id, x, x, x, n, {'property_xasd': 'lol'})
 
 
 def test_add_data_unit(mapper):
@@ -52,15 +52,15 @@ def test_add_calculation(mapper):
     conf = mapper.dao.get('conformer')
     type = mapper.dao.get('calculation_type')
     software = mapper.dao.get('software')
-    mapper.add_calculation('test_in', 'test_out', 'test -c -x', type[0].uuid, software[0].uuid,
-            conf[0].uuid, {'is this a test': True})
+    mapper.add_calculation('test_in', 'test_out', 'test -c -x', type[0].id, software[0].id,
+            conf[0].id, {'is this a test': True})
 
 
 def test_add_xy_data_calculation(mapper):
     units = mapper.dao.get('data_unit')
     calc = mapper.dao.get('calculation')
-    mapper.add_xy_data_calculation(calc[0].uuid, 'test', [1, 2, 3, 4], [0, 4, 3, 1],
-            units[0].uuid, units[0].uuid)
+    mapper.add_xy_data_calculation(calc[0].id, 'test', [1, 2, 3, 4], [0, 4, 3, 1],
+            units[0].id, units[0].id)
 
 
 def test_add_lab(mapper):
@@ -69,25 +69,25 @@ def test_add_lab(mapper):
 
 def test_add_synthesis_machine(mapper):
     lab = mapper.dao.get('lab')
-    mapper.add_synthesis_machine('chemputer', {'version': 1324}, lab[0].uuid)
+    mapper.add_synthesis_machine('chemputer', {'version': 1324}, lab[0].id)
 
 
 def test_add_synthesis(mapper):
     mol = mapper.dao.get('molecule')
     machine = mapper.dao.get('synthesis_machine')
-    mapper.add_synthesis(machine[0].uuid, mol[0].uuid, '<xdl></xdl>', 'Blablabla')
+    mapper.add_synthesis(machine[0].id, mol[0].id, '<xdl></xdl>', 'Blablabla')
 
 
 def test_add_synth_molecule_outcome(mapper):
     synth = mapper.dao.get('synthesis')
     mol = mapper.dao.get('molecule')
-    mapper.add_synth_molecule_outcome(synth[0].uuid, mol[0].uuid, 1.0)
+    mapper.add_synth_molecule_outcome(synth[0].id, mol[0].id, 1.0)
 
 
 def test_add_synth_unreacted_fragment(mapper):
     synth = mapper.dao.get('synthesis')
     mol = mapper.dao.get('fragment')
-    mapper.add_synth_unreacted_fragment(synth[0].uuid, mol[0].uuid, 1.0)
+    mapper.add_synth_unreacted_fragment(synth[0].id, mol[0].id, 1.0)
 
 
 def test_add_experiment_type(mapper):
@@ -97,14 +97,14 @@ def test_add_experiment_type(mapper):
 def test_add_experiment_machine(mapper):
     type_ = mapper.dao.get('experiment_type')
     lab = mapper.dao.get('lab')
-    mapper.add_experiment_machine('hplc', {'metadata': 'nop'}, type_[0].uuid, lab[0].uuid)
+    mapper.add_experiment_machine('hplc', {'metadata': 'nop'}, type_[0].id, lab[0].id)
 
 
 def test_add_experiment(mapper):
     machine = mapper.dao.get('experiment_machine')
     synth = mapper.dao.get('synthesis')
     unit = mapper.dao.get('data_unit')
-    mapper.add_experiment(synth[0].uuid, machine[0].uuid, {'concentration': '10M/L'}, 'blablabla') 
+    mapper.add_experiment(synth[0].id, machine[0].id, {'concentration': '10M/L'}, 'blablabla') 
 
     mapper.dao.rollback(before=datetime(1979, 12, 12, 12, 12, 12))
     mapper.dao.session.commit()

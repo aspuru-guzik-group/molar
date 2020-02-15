@@ -1,18 +1,10 @@
 begin;
 
 -- test fixture
-create sequence if not exists
-    public.test_id_seq
-    increment by 1
-        minvalue 1
-     no maxvalue
-      start with 1;
-
 create table public.test (
-    "id" bigint default nextval('sourcing.eventstore_id_seq'::regclass) not null,
     "created_on" timestamp without time zone,
     "updated_on" timestamp without time zone,
-    "uuid" uuid,
+    "id" uuid primary key not null,
     "test" text,
     "test_arr" float8[],
     "test_json" jsonb,
@@ -21,7 +13,7 @@ create table public.test (
 );
 
 
-select plan(5);
+select plan(6);
 
 
 -- testing on_create_query
@@ -51,7 +43,7 @@ insert into sourcing.eventstore
        (event,     type,   data, uuid)
 values ('update', 'test', 
         '{"test": "asdf", "test_arr": [1, 0, 2], "test_json": {"test": "asdf"}, "test_varchar": "fds", "test_int": 1}'::jsonb,
-        (select uuid from test)
+        (select id from test)
 );
 
 
@@ -90,16 +82,30 @@ select throws_ok('"update_statement2"', 'P0002');
 
 -- testing on_delete_query
 prepare "delete_statement" as insert into sourcing.eventstore
-        (event,     type, uuid)
-values ('delete', 'test', (select uuid from public.test));
+        (event,     type, uuid, timestamp)
+values ('delete', 'test', (select id from public.test), now() + interval '1 second');
 
 
-select performs_ok('"delete_statement"', 10);
+select performs_ok('"delete_statement"', 100);
+
+-- testing on_rollback_query
+insert into sourcing.eventstore
+       (event, timestamp,     data)
+values ('rollback', 
+        now() + interval '1 second',
+        format('{"before": "%s"}',
+               (select timestamp 
+                  from sourcing.eventstore
+                 where event = 'delete'))::jsonb);
+
+select results_eq(
+    'select count(*)::int from test',
+    $$ values (1::int) $$,
+    'test rollback');
 
 
 
 -- removing test fixture
-drop table    if exists public.test;
-drop sequence if exists public.test_id_seq;
+drop table if exists public.test;
 
-rollback;
+commit;

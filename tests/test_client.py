@@ -27,11 +27,11 @@ def test_add(client):
     client.add('fragment', 
             [{'smiles': 'abcd'}, {'smiles': 'dfge'}])
 
-def test_get_uuid(client):
-    u = client.get_uuid('fragment', smiles='abcd')
+def test_get_id(client):
+    u = client.get_id('fragment', smiles='abcd')
     UUID(u) # Validate uuid
     with pytest.raises(ValueError):
-        client.get_uuid('molecule', smiles='Idontexistlol')
+        client.get_id('molecule', smiles='Idontexistlol')
 
 def test_update(client):
     q = client.get('fragment')
@@ -44,4 +44,4 @@ def test_update(client):
 def test_delete(client):
     q = client.get('fragment')
 
-    client.delete('fragment', q['uuid'].tolist())
+    client.delete('fragment', q['id'].tolist())

@@ -28,33 +28,34 @@ create or replace function public.create_synthesis_hid ( synth_machine_id uuid, 
 returns character varying(16) as $synth_hid$
 declare
     synth_hid text := '';
-    lab_uuid uuid;
+    owner_lab_id uuid;
     rec record;
 begin
-    if (select exists(select uuid 
+    if (select exists(select id 
                         from public.synthesis_machine as sm 
-                       where sm.uuid = synth_machine_id
+                       where sm.id = synth_machine_id
         )) then
 
         -- lab owning the machine
-        lab_uuid = (select lab.uuid from public.lab as lab join public.synthesis_machine as sm 
-                                                             on lab.uuid = sm.lab_id
-                                                          where sm.uuid = synth_machine_id);
+        owner_lab_id = (select lab.id from public.lab as lab 
+                          join public.synthesis_machine as sm 
+                            on sm.lab_id = lab.id
+                         where sm.id = synth_machine_id);
 
         synth_hid = format('%s_%s_%s',
-        (select lab.short_name from public.lab where uuid = lab_uuid),
+        (select lab.short_name from public.lab where id = owner_lab_id),
         (select to_char(ts, 'YYYY-MM-DD')),
         (select  count(*)
            from public.synthesis as syn
 left outer join public.synthesis_machine as sm 
-             on syn.machine_id = sm.uuid
+             on syn.machine_id = sm.id
            join public.lab as lab
-             on lab.uuid = sm.lab_id
-          where lab.uuid = lab_uuid
+             on lab.id = sm.lab_id
+          where lab.id = owner_lab_id
             and syn.created_on > current_date - interval '1 day'));
         return synth_hid;
     else
-        raise using message = format('could not find machine with the provided uuid %s', synth_machine_id);
+        raise using message = format('could not find machine with the provided id %s', synth_machine_id);
     end if;
 end;
 $synth_hid$
@@ -128,7 +129,7 @@ begin
         end if;
     end loop;
     
-    return format('insert into public.%I ("uuid" %s) values (%L %s) returning "id"',
+    return format('insert into public.%I ("id" %s) values (%L %s) returning "id"',
                                 new.type,        q1,   new.uuid, q2);
 end;
 $query_txt$
@@ -165,7 +166,7 @@ begin
             when rec.col_type = 'jsonb' then
                 -- Does an aggreagation of the two jsonb. Last key wins.
                 q1 = q1 || format(', %I = ( select %I from public.%I 
-                                             where %I.uuid=%L ) || cast( %L as jsonb )',
+                                             where %I.id=%L ) || cast( %L as jsonb )',
                                     rec.col_name, rec.col_name, new.type, new.type, 
                                     new.uuid, new.data->>rec.col_name);
             when rec.col_type = 'ARRAY' then
@@ -193,7 +194,7 @@ begin
             end if;
         end if;
     end loop;
-    return format('update public.%I set %s where "uuid" = %L',
+    return format('update public.%I set %s where "id" = %L',
                   new.type, right(q1, -2), new.uuid);
 end;
 $query_txt$
@@ -206,7 +207,7 @@ begin
     if new.uuid is null then
         raise null_value_not_allowed using message='No uuid have been provided';
     end if;
-    return format('delete from public.%I where "uuid"=%L',
+    return format('delete from public.%I where "id"=%L',
                   new.type, new.uuid);
 
 end;
@@ -237,6 +238,10 @@ begin
     if (new.data ? 'before') then
         q1 = format('eventstore.timestamp < %L ::timestamp without time zone and ',
                     new.data->>'before');
+    end if;
+    if (new.data ? 'after') then
+        q1 = q1 || format('eventstore.timestamp > %L ::timestamp without time zone and ',
+                          new.data->>'after');
     end if;
 
     if q1 = '' then
@@ -289,7 +294,7 @@ begin
         insert into sourcing.eventstore 
             ("event", "data", "timestamp")
      values ('rollback-end', new.data, now());
-        new.event := 'rollback-start';
+        new.event := 'rollback-begin';
     else
         raise unique_violation using message = format('Invalid event type: %L', new.event);
     end case;
