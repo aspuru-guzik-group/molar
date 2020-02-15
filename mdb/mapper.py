@@ -57,7 +57,7 @@ class SchemaMapper:
     def add_software(self, name, version):
         data = {'name': name, 'version': version}
         event = self.dao.add('software', data)
-        self.dao.session.commit()
+        self.dao.session.commit() 
         return event
 
     def add_lab(self, name, short_name):
@@ -81,13 +81,13 @@ class SchemaMapper:
         self.dao.session.commit()
         return event
 
-    def add_synth_molecule(self, synth_uuid, molecule_uuid, yield_):
+    def add_synth_molecule_outcome(self, synth_uuid, molecule_uuid, yield_):
         data = {'synth_id': synth_uuid, 'molecule_id': molecule_uuid, 'yield': yield_}
         event = self.dao.add('synth_molecule', data)
         self.dao.session.commit()
         return event
 
-    def add_synth_fragment(self, synth_uuid, fragment_uuid, yield_):
+    def add_synth_unreacted_fragment(self, synth_uuid, fragment_uuid, yield_):
         data = {'synth_id': synth_uuid, 'fragment_id': fragment_uuid, 'yield': yield_}
         event = self.dao.add('synth_fragment', data)
         self.dao.session.commit()
@@ -111,18 +111,17 @@ class SchemaMapper:
         self.dao.session.commit()
         return event
 
-    def add_experiment(self, synth_uuid, data_name, x, y, x_units_uuid, y_units_uuid, 
-            machine_uuid, metadata, notes):
+    def add_experiment(self, synth_uuid, machine_uuid, metadata, notes):
         data = {'synth_id': synth_uuid, 
                 'metadata': metadata,
                 'notes': notes}
         event = self.dao.add('experiment', data)
         self.dao.session.commit()
-        self.add_xy_data_experiment(event.uuid, data_name, x, y, x_units_uuid, y_units_uuid)
         return event
 
     def add_xy_data_experiment(self, experiment_uuid, name, x, y, x_units_uuid, y_units_uuid):
         data = {'experiment_uuid': experiment_uuid,
+                'name': name,
                 'x': x,
                 'y': y,
                 'x_units_uuid': x_units_uuid,
@@ -131,8 +130,7 @@ class SchemaMapper:
         self.dao.session.commit()
         return event
 
-    def add_xy_data_calculation(self, calculation_uuid, name, x, y, x_units_uuid,
-            y_units_uuid):
+    def add_xy_data_calculation(self, calculation_uuid, name, x, y, x_units_uuid, y_units_uuid):
         data = {'calculation_uuid': calculation_uuid,
                 'name': name,
                 'x': x,
