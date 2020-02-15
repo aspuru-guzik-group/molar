@@ -47,8 +47,8 @@ test-backend:
       - apk upgrade
       - apk add --no-cache bash
       - apk add --no-cache --virtual=build-dependencies unzip
-      - apk add --no-cache curl wget python3 python3-dev
-      - apk add --no-cache graphviz postgresql-dev postgresql-client
+      - apk add --no-cache wget python3 python3-dev
+      - apk add --no-cache postgresql-dev postgresql-client
       - apk add --no-cache gcc musl-dev build-base perl-dev
       - python3 -m ensurepip
       - pip3 install --upgrade pip setuptools
