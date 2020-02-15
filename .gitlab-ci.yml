@@ -46,7 +46,7 @@ test-backend:
       - apk upgrade
       - apk add --no-cache bash
       - apk add --no-cache --virtual=build-dependencies unzip
-      - apk add --no-cache wget python3 python3-dev bash
+      - apk add --no-cache wget python3 python3-dev
       - apk add --no-cache postgresql-dev postgresql-client
       - apk add --no-cache gcc musl-dev build-base perl-dev
       - python3 -m ensurepip
@@ -54,16 +54,16 @@ test-backend:
       - rm -r /usr/lib/python*/ensurepip
       - if [ ! -e /usr/bin/pip ]; then ln -s pip3 /usr/bin/pip ; fi 
       - if [[ ! -e /usr/bin/python ]]; then ln -sf /usr/bin/python3 /usr/bin/python; fi 
-      - wget 'http://api.pgxn.org/dist/pgtap/1.1.0/pgtap-1.1.0.zip' -q && \
+      - wget 'http://api.pgxn.org/dist/pgtap/1.1.0/pgtap-1.1.0.zip' -q
       - unzip pgtap-1.1.0.zip
       - cd pgtap-1.1.0 && make && make install
       - cpan TAP::Parser::SourceHandler::pgTAP
       - pip install alembic psycopg2-binary
-      - /bin/bash ./pgsql/setup.sh
+      - cd .. && ./pgsql/setup.sh
       - alembic -c tests/alembic.ini.test upgrade head
-      - psql -h ${DB_HOST} -U ${DB_USER} -c 'create extension if not exists pgtap';
+      - psql -h ${DB_HOST} -U ${DB_USER} -d ${DB_NAME} -c 'create extension if not exists pgtap';
     script:
-      - pg_prove --dbname ${DB_NAME} pgsql/tests/test_eventsourcing.sql -h ${DB_HOST} -p ${PGPASSWORD}
+      - pg_prove --dbname ${DB_NAME} pgsql/tests/test_eventsourcing.sql -h ${DB_HOST} -U ${DB_USER}
  
 
 schemacrawler:
@@ -95,9 +95,9 @@ schemacrawler:
       - /bin/bash ./pgsql/setup.sh
       - alembic -c tests/alembic.ini.test upgrade head
     script:
-      - cd schemacrawler-15.06.01-distribution && ./_schemacrawler/schemacrawler.sh -server=postgresql -user=postgres -host=postgres -database=molecdb -password='' -c=schema -fmt=scdot -o=../schema.graphviz
-      - cd && dot -Tpng schema.graphviz -o schema.png
+      - cd schemacrawler-15.06.01-distribution && ./_schemacrawler/schemacrawler.sh -server=postgres -user=${DB_USER} -host=${DB_HOST} -database=${DB_NAME} -password=${PGPASSWORD} -c=schema -fmt=scdot -o=/schema.graphviz
+      - dot -Tpng /schema.graphviz -o /schema.png
     artifacts:
       paths:
-      - schema.graphviz
-      - schema.png
+      - /schema.graphviz
+      - /schema.png
