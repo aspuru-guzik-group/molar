@@ -95,9 +95,9 @@ schemacrawler:
       - /bin/bash ./pgsql/setup.sh
       - alembic -c tests/alembic.ini.test upgrade head
     script:
-      - cd schemacrawler-15.06.01-distribution && ./_schemacrawler/schemacrawler.sh -server=postgresql -user=${DB_USER} -host=${DB_HOST} -database=${DB_NAME} -password=${PGPASSWORD} -c=schema -fmt=scdot -o=/schema.graphviz
-      - dot -Tpng /schema.graphviz -o /schema.png
+      - ./schemacrawler-15.06.01-distribution/_schemacrawler/schemacrawler.sh -server=postgresql -user=${DB_USER} -host=${DB_HOST} -database=${DB_NAME} -password=${PGPASSWORD} -c=schema -fmt=scdot -o=./schema.graphviz
+      - dot -Tpng ./schema.graphviz -o ./schema.png
     artifacts:
       paths:
-      - /schema.graphviz
-      - /schema.png
+      - ./schema.graphviz
+      - ./schema.png
