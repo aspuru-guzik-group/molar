@@ -39,12 +39,12 @@ class SchemaMapper:
         self.dao.session.commit()
         return event
 
-    def add_calculation(self, input, output, command_line, calculation_type, software_id, conformer_id,
+    def add_calculation(self, input, output, command_line, calculation_type_id, software_id, conformer_id,
             metadata, output_conformer_id=None):
         data = {'input': input,
                 'output': output,
                 'command_line': command_line,
-                'calculation_type_id': calculation_type,
+                'calculation_type_id': calculation_type_id,
                 'software_id': software_id,
                 'conformer_id': conformer_id,
                 'metadata': metadata}
@@ -72,23 +72,27 @@ class SchemaMapper:
         self.dao.session.commit()
         return event
 
-    def add_synthesis(self, machine_id, targeted_molecule_id, xdl, notes):
-        data = {'targeted_molecule_id': targeted_molecule_id,
-                'machine_id': machine_id,
+    def add_synthesis(self, synthesis_machine_id, targeted_molecule_id, xdl, notes):
+        data = {'molecule_id': targeted_molecule_id,
+                'synthesis_machine_id': synthesis_machine_id,
                 'xdl': xdl,
                 'notes': notes}
         event = self.dao.add('synthesis', data)
         self.dao.session.commit()
         return event
 
-    def add_synth_molecule_outcome(self, synth_id, molecule_id, yield_):
-        data = {'synth_id': synth_id, 'molecule_id': molecule_id, 'yield': yield_}
+    def add_synth_molecule_outcome(self, synthesis_id, molecule_id, yield_):
+        data = {'synthesis_id': synthesis_id, 
+                'molecule_id': molecule_id, 
+                'yield': yield_}
         event = self.dao.add('synth_molecule', data)
         self.dao.session.commit()
         return event
 
-    def add_synth_unreacted_fragment(self, synth_id, fragment_id, yield_):
-        data = {'synth_id': synth_id, 'fragment_id': fragment_id, 'yield': yield_}
+    def add_synth_unreacted_fragment(self, synthesis_id, fragment_id, yield_):
+        data = {'synthesis_id': synthesis_id, 
+                'fragment_id': fragment_id, 
+                'yield': yield_}
         event = self.dao.add('synth_fragment', data)
         self.dao.session.commit()
         return event
@@ -99,8 +103,11 @@ class SchemaMapper:
         self.dao.session.commit()
         return event
 
-    def add_experiment_machine(self, name, metadata, type_id, lab_id):
-        data = {'name': name, 'lab_id': lab_id, 'type_id': type_id, 'metadata': metadata}
+    def add_experiment_machine(self, name, metadata, experiment_type_id, lab_id):
+        data = {'name': name, 
+                'lab_id': lab_id, 
+                'experiment_type_id': experiment_type_id, 
+                'metadata': metadata}
         event = self.dao.add('experiment_machine', data)
         self.dao.session.commit()
         return event
@@ -111,8 +118,9 @@ class SchemaMapper:
         self.dao.session.commit()
         return event
 
-    def add_experiment(self, synth_id, machine_id, metadata, notes):
-        data = {'synth_id': synth_id, 
+    def add_experiment(self, synthesis_id, experiment_machine_id, metadata, notes):
+        data = {'synthesis_id': synthesis_id, 
+                'experiment_machine_id': experiment_machine_id,
                 'metadata': metadata,
                 'notes': notes}
         event = self.dao.add('experiment', data)

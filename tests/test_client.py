@@ -37,11 +37,11 @@ def test_update(client):
     q = client.get('fragment')
     q.at[0, 'smiles'] = 'jkl;'
     client.update('fragment', q)
-
-    q = client.get('fragment')
-    assert q.at[0, 'smiles'] == 'jkl;'
+    
+    q = client.get('fragment', filters=[client.models.fragment.smiles == 'jkl;'])
+    assert len(q) == 1
 
 def test_delete(client):
     q = client.get('fragment')
 
-    client.delete('fragment', q['id'].tolist())
+    client.delete('fragment', q['fragment_id'].tolist())

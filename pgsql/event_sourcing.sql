@@ -16,8 +16,8 @@ create table sourcing.eventstore (
     "id"    bigint default nextval('sourcing.eventstore_id_seq'::regclass) not null,
     "event" character varying(2044)                                        not null,
     "type"  character varying(2044),
-    "data"  jsonb    default '{}'                                          not null,
-    "timestamp" timestamp without time zone default now()                  not null,
+    "data"  jsonb    default '{}'                                                      not null,
+    "timestamp" timestamp without time zone default now()::timestamp without time zone not null,
     "uuid" uuid,
     primary key ( "id" )
 );
@@ -31,27 +31,24 @@ declare
     owner_lab_id uuid;
     rec record;
 begin
-    if (select exists(select id 
+    if (select exists(select synthesis_machine_id 
                         from public.synthesis_machine as sm 
-                       where sm.id = synth_machine_id
+                       where sm.synthesis_machine_id = synth_machine_id
         )) then
 
         -- lab owning the machine
-        owner_lab_id = (select lab.id from public.lab as lab 
-                          join public.synthesis_machine as sm 
-                            on sm.lab_id = lab.id
-                         where sm.id = synth_machine_id);
+        owner_lab_id = (select lab.lab_id from public.lab as lab 
+                          join public.synthesis_machine as sm using(lab_id)
+                         where sm.synthesis_machine_id = synth_machine_id);
 
         synth_hid = format('%s_%s_%s',
-        (select lab.short_name from public.lab where id = owner_lab_id),
+        (select lab.short_name from public.lab where lab_id = owner_lab_id),
         (select to_char(ts, 'YYYY-MM-DD')),
         (select  count(*)
            from public.synthesis as syn
-left outer join public.synthesis_machine as sm 
-             on syn.machine_id = sm.id
-           join public.lab as lab
-             on lab.id = sm.lab_id
-          where lab.id = owner_lab_id
+left outer join public.synthesis_machine as sm using(synthesis_machine_id)
+           join public.lab as lab using(lab_id)
+          where lab.lab_id = owner_lab_id
             and syn.created_on > current_date - interval '1 day'));
         return synth_hid;
     else
@@ -82,7 +79,7 @@ begin
         where table_schema = 'public' and table_name = new.type 
     )
     loop
-        continue when rec.col_name = 'id';
+        continue when rec.col_name = format('%s_id', rec.col_type);
         if new.data ? rec.col_name = true then
             q1 = q1 || format(', %I', rec.col_name);
             case rec.col_type
@@ -115,7 +112,7 @@ begin
                 -- synthesis has a special field - hid that is a human id generated automatically
                 q1 = q1 || format(', %I', rec.col_name);
                 hid = (select public.create_synthesis_hid(
-                        (new.data->>'machine_id')::uuid,
+                        (new.data->>'synthesis_machine_id')::uuid,
                          new.timestamp));
                 q2 = q2 || format(', cast( %L as character varying(%s) )',
                                   hid,
@@ -129,8 +126,8 @@ begin
         end if;
     end loop;
     
-    return format('insert into public.%I ("id" %s) values (%L %s) returning "id"',
-                                new.type,        q1,   new.uuid, q2);
+    return format('insert into public.%I ("%s_id" %s) values (%L %s) returning "%s_id"',
+                  new.type, new.type, q1, new.uuid, q2, new.type);
 end;
 $query_txt$
 language plpgsql;
@@ -154,7 +151,7 @@ begin
          where table_schema = 'public' and table_name = new.type
     )
     loop
-        continue when rec.col_name = 'id';
+        continue when rec.col_name = format('%s_id', rec.col_type);
         if new.data ? rec.col_name = true then
             case
             when rec.col_type = 'user-defined' then
@@ -166,9 +163,9 @@ begin
             when rec.col_type = 'jsonb' then
                 -- Does an aggreagation of the two jsonb. Last key wins.
                 q1 = q1 || format(', %I = ( select %I from public.%I 
-                                             where %I.id=%L ) || cast( %L as jsonb )',
+                                             where %I.%s_id=%L ) || cast( %L as jsonb )',
                                     rec.col_name, rec.col_name, new.type, new.type, 
-                                    new.uuid, new.data->>rec.col_name);
+                                    new.type, new.uuid, new.data->>rec.col_name);
             when rec.col_type = 'ARRAY' then
                 q1 = q1 || format(', %I = cast( %L as float8[] )',
                                   rec.col_name, 
@@ -194,8 +191,8 @@ begin
             end if;
         end if;
     end loop;
-    return format('update public.%I set %s where "id" = %L',
-                  new.type, right(q1, -2), new.uuid);
+    return format('update public.%I set %s where "%s_id" = %L',
+                  new.type, right(q1, -2), new.type, new.uuid);
 end;
 $query_txt$
 language plpgsql;
@@ -207,8 +204,8 @@ begin
     if new.uuid is null then
         raise null_value_not_allowed using message='No uuid have been provided';
     end if;
-    return format('delete from public.%I where "id"=%L',
-                  new.type, new.uuid);
+    return format('delete from public.%I where "%s_id"=%L',
+                  new.type, new.type, new.uuid);
 
 end;
 $query_txt$
@@ -272,7 +269,7 @@ declare
     count INT := 1;
 begin
     if new.timestamp is null then
-        new.timestamp := now();
+        new.timestamp := now()::timestamp without time zone;
     end if;
 
     case new.event
@@ -293,7 +290,7 @@ begin
         execute (select sourcing.on_rollback_query(new));
         insert into sourcing.eventstore 
             ("event", "data", "timestamp")
-     values ('rollback-end', new.data, now());
+     values ('rollback-end', new.data, now()::timestamp without time zone);
         new.event := 'rollback-begin';
     else
         raise unique_violation using message = format('Invalid event type: %L', new.event);

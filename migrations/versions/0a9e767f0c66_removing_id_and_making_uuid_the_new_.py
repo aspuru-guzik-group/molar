@@ -17,6 +17,7 @@ depends_on = None
 
 
 def upgrade():
+    # id -> table_name_id so we can use select * from a join b using (table_name_id)
     table_names = \
             ["conformer", "fragment", "molecule_fragment", "molecule", "software",
              "calculation", "experiment_type", "calculation_type", "synth_molecule",
@@ -24,9 +25,18 @@ def upgrade():
              "data_unit", "xy_data", "experiment_machine"]
     for table_name in table_names:
         op.execute(f'alter table public.{table_name} drop column id;')
-        op.execute(f'alter table public.{table_name} rename column uuid to id;')
-        op.execute(f'alter table public.{table_name} add primary key(id);')
+        op.execute(f'alter table public.{table_name} rename column uuid to {table_name}_id;')
+        op.execute(f'alter table public.{table_name} add primary key({table_name}_id);')
 
+    # also renaming some keys
+    op.execute('alter table public.synthesis rename column machine_id to synthesis_machine_id')
+    op.execute('alter table public.experiment_machine rename column type_id to experiment_type_id')
+    op.execute('alter table public.synthesis rename column targeted_molecule_id to molecule_id')
+    op.execute('alter table public.experiment rename column synth_id to synthesis_id')
+    op.execute('alter table public.synth_molecule rename column synth_id to synthesis_id')
+    op.execute('alter table public.synth_fragment rename column  synth_id to synthesis_id ')
+    op.execute('alter table public.experiment rename column machine_id to experiment_machine_id')
+    op.execute('alter table public.fragment rename column properties to metadata')
 
 def downgrade():
     # yolo lol!

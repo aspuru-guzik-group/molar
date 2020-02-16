@@ -39,7 +39,7 @@ class MDBClient(mapper.SchemaMapper):
     def __del__(self):
         self.session.close()
 
-    def get(self, table_name, return_df=True, filters=None, limit=None, offset=None):
+    def get(self, table_name, return_df=True, filters=None, limit=None, offset=None, order_by=None):
         """
         This method allows to read data stored in the database.
 
@@ -48,6 +48,8 @@ class MDBClient(mapper.SchemaMapper):
         :param filters: (list) list of fitlers 
         :param limit: (int or None) limits how many rows should be loaded.
         :param offset: (int or None) indicates how many rows to skip.
+        :param order_by: (asc or desc clause) order the query. The default is
+        by timestamp or created_on column.
         
         :returns: List of queried object of pandas.DataFrame containing the data
 
@@ -72,7 +74,7 @@ class MDBClient(mapper.SchemaMapper):
             df.head()
         
         """
-        data = self.dao.get(table_name, filters, limit, offset)
+        data = self.dao.get(table_name, filters, limit, offset, order_by)
         if not return_df:
             return data
         df = pd.DataFrame.from_records([d.__dict__ for d in data])
@@ -109,7 +111,7 @@ class MDBClient(mapper.SchemaMapper):
         q = self.get(table_name, filters=filters, return_df=False, limit=1)
         if q is None:
             raise ValueError(f'No row with the specified filters where found.  Filters: {filters}')
-        return q.id
+        return getattr(q, f'{table_name}_id')
 
     def add(self, table_name, data):
         """
@@ -177,15 +179,15 @@ class MDBClient(mapper.SchemaMapper):
                               "pandas.DataFrame"))
 
         if not id:
-            id = data['id'].tolist()
-            del data['id']
+            id = data[f'{table_name}_id'].tolist()
+            del data[f'{table_name}_id']
         
         if 'updated_on' in data:
             del data['updated_on']
 
         if 'created_on' in data:
             del data['created_on']
-
+        
         iter = data.iterrows()
         if self.use_tqdm:
             iter = tqdm(iter)
@@ -278,7 +280,8 @@ class DataAccessObject:
         self.session = session
         self.models = models
 
-    def get(self, table_name, filters=None, limit=None, offset=None):
+    def get(self, table_name, filters=None, limit=None, offset=None,
+            order_by=None):
         """
         Reads data from a table
 
@@ -286,7 +289,9 @@ class DataAccessObject:
         :param filters (list):
         :param limit (int or None):
         :param offset (int or None):
+        :param order_by (asc or desc clause):
         """
+
         if not isinstance(table_name, list):
             table_name = [table_name]
 
@@ -294,6 +299,12 @@ class DataAccessObject:
         model = getattr(self.models, t, None)
         assert model is not None, f'{t} does not correspond to any table!'
 
+        order_by_col = getattr(model, 'updated_on', None)
+        if order_by_col is None:
+            order_by_col = getattr(model, 'timestamp', None)
+        
+        if order_by is None:
+            order_by = order_by_col.desc()
         query = self.session.query(model)
 
         for t in table_name:
@@ -306,6 +317,7 @@ class DataAccessObject:
             for f in filters:
                 filter = and_(filter, f)
             query = query.filter(filter)
+        query = query.order_by(order_by)
         
         if limit is None:
             return query.all()
@@ -315,6 +327,7 @@ class DataAccessObject:
         if offset is not None:
             query = query.offset(offset)
         query = query.limit(limit)
+        
         return query
         
     def add(self, table_name, data):

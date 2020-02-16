@@ -4,7 +4,7 @@ begin;
 create table public.test (
     "created_on" timestamp without time zone,
     "updated_on" timestamp without time zone,
-    "id" uuid primary key not null,
+    "test_id" uuid primary key not null,
     "test" text,
     "test_arr" float8[],
     "test_json" jsonb,
@@ -43,7 +43,7 @@ insert into sourcing.eventstore
        (event,     type,   data, uuid)
 values ('update', 'test', 
         '{"test": "asdf", "test_arr": [1, 0, 2], "test_json": {"test": "asdf"}, "test_varchar": "fds", "test_int": 1}'::jsonb,
-        (select id from test)
+        (select test_id from test)
 );
 
 
@@ -83,7 +83,7 @@ select throws_ok('"update_statement2"', 'P0002');
 -- testing on_delete_query
 prepare "delete_statement" as insert into sourcing.eventstore
         (event,     type, uuid, timestamp)
-values ('delete', 'test', (select id from public.test), now() + interval '1 second');
+values ('delete', 'test', (select test_id from public.test), now() + interval '1 second');
 
 
 select performs_ok('"delete_statement"', 100);
