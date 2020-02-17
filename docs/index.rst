@@ -3,26 +3,21 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to Goldmine's documentation!
-====================================
+*********
+MadnessDB
+*********
 
-Goldmine is a PostgreSQL scheme for a database meant for molecule discovery. It implements event sourcing  to keep the data safe (see scheme).
-
-In order to make it as easy as possible to use, it also contains a python client (see API).
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
-
-   schema
-   api
    
-   Examples.ipynb
-   FAQ.ipynb
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+   01_installation
+   02_accessing_the_database
+   03_writing_data.ipynb
+   04_reading_data.ipynb
+   05_event_sourcing.ipynb
+   06_schema
+   07_client_api
+   08_contributing
+   09_admin_guide 

@@ -49,7 +49,7 @@ class Handler(socketserver.BaseRequestHandler):
                     (self.chain_host, self.chain_port))
             return
 
-        logger.debug('Connected!  Tunnel open %r -> %r -> %r' % (self.request.getpeername(),
+        self.logger.debug('Connected!  Tunnel open %r -> %r -> %r' % (self.request.getpeername(),
                                                             channel.getpeername(), (self.chain_host, self.chain_port)))
         while True:
             r, w, x = select.select([self.request, channel], [], [])
@@ -65,26 +65,27 @@ class Handler(socketserver.BaseRequestHandler):
                 self.request.send(data)
         channel.close()
         self.request.close()
-        logger.debug('Tunnel closed')
+        self.logger.debug('Tunnel closed')
 
 
 def tunnel_factory(local_port, remote_host, remote_port, transport):
     # this is a little convoluted, but lets me configure things for the Handler
     # object.  (SocketServer doesn't give Handlers any way to access the outer
     # server normally.)
-    class SubHander(Handler):
+    class SubHandler(Handler):
         chain_host = remote_host
         chain_port = remote_port
         ssh_transport = transport
-    return ForwardServer(('127.0.0.1', local_port), SubHander)
+    return ForwardServer(('localhost', local_port), SubHandler)
 
 
 def connect(username, hostname, key_filename, proxycommand=None):
     ssh = SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.client.AutoAddPolicy)
     proxy = ProxyCommand(proxycommand) if proxycommand is not None else None
     ssh.connect(username=username, 
                 hostname=hostname,
                 key_filename=key_filename,
                 look_for_keys=False,
                 sock=proxy)
-    return client.get_transport()
+    return ssh.get_transport()

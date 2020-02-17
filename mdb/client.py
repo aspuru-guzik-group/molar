@@ -36,7 +36,7 @@ class MDBClient(mapper.SchemaMapper):
 
         self.use_tqdm = use_tqdm
 
-    def __del__(self):
+    def __delete__(self):
         self.session.close()
 
     def get(self, table_name, return_df=True, filters=None, limit=None, offset=None, order_by=None):
@@ -172,7 +172,11 @@ class MDBClient(mapper.SchemaMapper):
         if isinstance(data, dict):
             data = [data]
         if isinstance(data, list):
-            data = pd.DataFrame.from_records(data, exclude=['id', 'updated_on', 'created_on'])
+            exclude = [x for x in data[0].keys() \
+                          if x == f'{table_name}_id' or \
+                             x == 'created_on' or \
+                             x == 'updated_on']
+            data = pd.DataFrame.from_records(data, exclude=exclude)
         if not isinstance(data, pd.DataFrame):
             raise TypeError((f"Invalid data type! Got {type(data)} "
                               "but expected either dict, list or "
@@ -181,6 +185,9 @@ class MDBClient(mapper.SchemaMapper):
         if not id:
             id = data[f'{table_name}_id'].tolist()
             del data[f'{table_name}_id']
+        
+        if not isinstance(id, list):
+            id = [id]
         
         if 'updated_on' in data:
             del data['updated_on']
@@ -255,16 +262,16 @@ class MDBClientWithSSH(MDBClient):
     def __init__(self, hostname, username, password, database,
             ssh_username, ssh_hostname, ssh_keyfile, ssh_proxy, use_tqdm=True):
         transport = ssh.connect(ssh_username, ssh_hostname, ssh_keyfile, ssh_proxy)
-        forward_server = ssh.tunnel_factory(5432, 'localhost', 5432, transport)
+        forward_server = ssh.tunnel_factory(5432, hostname, 5432, transport)
         server_thread = Thread(target=forward_server.serve_forever)
         server_thread.daemon = True
         server_thread.start()
         self.ssh_server = forward_server
         
-        super().__init__(hostname, username, password, database)
+        super().__init__('localhost', username, password, database)
         
-    def __del__(self):
-        super().__del__()
+    def __delete__(self):
+        super().__delete__()
         self.ssh_server.shutdown()
 
 

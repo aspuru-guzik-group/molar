@@ -1,18 +1,19 @@
 from setuptools import setup, find_packages
 
 requirements = [
+    "Click==7.0",
+    "SQLAlchemy==1.3.12",
     "certifi==2019.11.28",
+    "coloredlogs==10.0",
     "numpy==1.18.1",
     "pandas==0.25.3",
+    "paramiko==2.7.1",
     "psycopg2-binary==2.8.4",
     "python-dateutil==2.8.1",
     "pytz==2019.3",
     "six==1.14.0",
-    "SQLAlchemy==1.3.12",
+    "toml==0.10.0",
     "tqdm==4.41.1",
-    "paramiko==2.7.1",
-    "coloredlogs==10.0",
-    "toml==0.10.0"
 ]
 
 setup(

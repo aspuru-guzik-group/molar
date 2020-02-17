@@ -24,38 +24,40 @@ create table sourcing.eventstore (
 
 
 -- create a human readable id for the synthesis
-create or replace function public.create_synthesis_hid ( synth_machine_id uuid, ts timestamp without time zone)
-returns character varying(16) as $synth_hid$
+create or replace function public.create_synthesis_hid (new record)
+returns record as $new$
 declare
-    synth_hid text := '';
+    hid character varying(16) := '';
     owner_lab_id uuid;
     rec record;
 begin
     if (select exists(select synthesis_machine_id 
                         from public.synthesis_machine as sm 
-                       where sm.synthesis_machine_id = synth_machine_id
+                       where sm.synthesis_machine_id = (select new.data->>'synthesis_machine_id')::uuid
         )) then
 
         -- lab owning the machine
         owner_lab_id = (select lab.lab_id from public.lab as lab 
                           join public.synthesis_machine as sm using(lab_id)
-                         where sm.synthesis_machine_id = synth_machine_id);
+                         where sm.synthesis_machine_id = (select new.data->>'synthesis_machine_id')::uuid);
 
-        synth_hid = format('%s_%s_%s',
-        (select lab.short_name from public.lab where lab_id = owner_lab_id),
-        (select to_char(ts, 'YYYY-MM-DD')),
-        (select  count(*)
-           from public.synthesis as syn
-left outer join public.synthesis_machine as sm using(synthesis_machine_id)
-           join public.lab as lab using(lab_id)
-          where lab.lab_id = owner_lab_id
-            and syn.created_on > current_date - interval '1 day'));
-        return synth_hid;
+        hid = format('%s_%s_%s',
+            (select lab.short_name from public.lab where lab_id = owner_lab_id),
+            (select to_char(new.timestamp, 'YYYY-MM-DD')),
+            (select  count(*)
+               from public.synthesis as syn
+    left outer join public.synthesis_machine as sm using(synthesis_machine_id)
+               join public.lab as lab using(lab_id)
+              where lab.lab_id = owner_lab_id
+                and syn.created_on > date_trunc('day', new.timestamp) - interval '1 day'));
+        
+        new.data = jsonb_insert(new.data, '{hid}', quote_ident((hid::text))::jsonb);
+        return new;
     else
         raise using message = format('could not find machine with the provided id %s', synth_machine_id);
     end if;
 end;
-$synth_hid$
+$new$
 language plpgsql;
 
 
@@ -108,20 +110,6 @@ begin
            if rec.col_name = 'created_on' or rec.col_name = 'updated_on' then
                 q1 = q1 || format(', %I', rec.col_name);
                 q2 = q2 || format(', cast( %L as timestamp without time zone )', new.timestamp);
-           elsif new.type = 'synthesis' and rec.col_name = 'hid' then
-                -- synthesis has a special field - hid that is a human id generated automatically
-                q1 = q1 || format(', %I', rec.col_name);
-                hid = (select public.create_synthesis_hid(
-                        (new.data->>'synthesis_machine_id')::uuid,
-                         new.timestamp));
-                q2 = q2 || format(', cast( %L as character varying(%s) )',
-                                  hid,
-                                  (select character_maximum_length
-                                     from information_schema.columns
-                                    where table_schema = 'public'
-                                      and   table_name = new.type
-                                      and  column_name = rec.col_name));
-                new.data = jsonb_insert(new.data, '{hid}', quote_ident((hid::text))::jsonb);
             end if;
         end if;
     end loop;
@@ -277,6 +265,9 @@ begin
         if new.uuid is null then
             new.uuid := uuid_generate_v4();
         end if;
+        if new.type = 'synthesis' and not new.data ? 'hid' then
+            new = (select public.create_synthesis_hid(new));
+        end if;
         execute (select sourcing.on_create_query(new));
     when 'update' then
         execute (select sourcing.on_update_query(new));
@@ -290,7 +281,7 @@ begin
         execute (select sourcing.on_rollback_query(new));
         insert into sourcing.eventstore 
             ("event", "data", "timestamp")
-     values ('rollback-end', new.data, now()::timestamp without time zone);
+     values ('rollback-end', new.data, new.timestamp);
         new.event := 'rollback-begin';
     else
         raise unique_violation using message = format('Invalid event type: %L', new.event);

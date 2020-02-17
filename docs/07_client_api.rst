@@ -7,6 +7,10 @@ API Reference
     :inherited-members:
     :undoc-members:
 
+.. autoclass:: mdb.MDBClientWithSSH
+    :show-inheritance:
+    :members:
+
 .. autoclass:: mdb.mapper.SchemaMapper
     :members:
     :undoc-members:

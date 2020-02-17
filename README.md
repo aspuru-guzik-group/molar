@@ -77,5 +77,4 @@ client.get('molecule')
 
 ## Documentation
 
-It's [here](http://www.cs.toronto.edu/~tgaudin/madnessdb/) (user: `madness`, pw:
-`darpa-madness`)
+It's [here](http://www.cs.toronto.edu/~tgaudin/madnessdb/) (user: `madness`, pw: `darpa-madness`)
