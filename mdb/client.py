@@ -260,8 +260,8 @@ class MDBClientWithSSH(MDBClient):
 
     """
     def __init__(self, hostname, username, password, database,
-            ssh_username, ssh_hostname, ssh_keyfile, ssh_proxy, use_tqdm=True):
-        transport = ssh.connect(ssh_username, ssh_hostname, ssh_keyfile, ssh_proxy)
+            ssh_username, ssh_hostname, ssh_keyfile, use_tqdm=True):
+        transport = ssh.connect(ssh_username, ssh_hostname, ssh_keyfile)
         forward_server = ssh.tunnel_factory(5432, hostname, 5432, transport)
         server_thread = Thread(target=forward_server.serve_forever)
         server_thread.daemon = True

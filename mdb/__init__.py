@@ -2,7 +2,6 @@ from .client import MDBClient, MDBClientWithSSH
 
 import toml
 
-
 __version__ = '0.2'
 __author__ = 'Theophile Gaudin'
 
@@ -26,6 +25,5 @@ def load_client_from_config(config_file):
         kwargs['ssh_username'] = ssh['username']
         kwargs['ssh_hostname'] = ssh['hostname']
         kwargs['ssh_keyfile'] = ssh['keyfile']
-        kwargs['ssh_proxy'] = ssh['proxy_cmd']
         return MDBClientWithSSH(**kwargs)
     return MDBClient(**kwargs)
