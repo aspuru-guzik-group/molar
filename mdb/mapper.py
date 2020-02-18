@@ -15,7 +15,7 @@ class SchemaMapper:
         self.dao.session.commit()
         return event
 
-    def add_molecule(self, smiles, fragments_id):
+    def add_molecule(self, smiles, fragments_id=[]):
         event = self.dao.add('molecule', {'smiles': smiles})
         if not isinstance(fragments_id, list):
             fragments_id = [fragments_id]
