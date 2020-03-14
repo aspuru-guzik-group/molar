@@ -18,38 +18,38 @@ def dao():
 
 
 def test_add(dao):
-    dao.add('fragment', {'smiles': 'C1ccccc1'})
+    dao.add('molecule', {'smiles': 'C1ccccc1'})
     dao.session.commit()
 
 
 def test_get(dao):
-    query = dao.get('fragment')
+    query = dao.get('molecule')
     assert query[0].smiles == 'C1ccccc1'
 
 
 def test_update(dao):
-    query = dao.get('fragment')
-    dao.update('fragment', {'smiles': 'CCC=C'}, query[0].fragment_id)
+    query = dao.get('molecule')
+    dao.update('molecule', {'smiles': 'CCC=C'}, query[0].fragment_id)
     dao.session.commit()
-    query = dao.get('fragment')
+    query = dao.get('molecule')
     assert query[0].smiles == 'CCC=C'
 
 
 def test_delete(dao):
-    query = dao.get('fragment')
-    dao.delete('fragment', query[0].fragment_id)
+    query = dao.get('molecule')
+    dao.delete('molecule', query[0].fragment_id)
     dao.session.commit()
-    query = dao.get('fragment')
+    query = dao.get('molecule')
     assert len(query) == 0
 
 
 def test_rollback(dao):
-    dao.add('fragment', {'smiles': 'C1cc(=C)ccc1'})
-    dao.add('fragment', {'smiles': 'C=CCC'})
-    dao.add('fragment', {'smiles': 'CC=CC'})
-    dao.add('fragment', {'smiles': 'C#CCCC'})
+    dao.add('molecule', {'smiles': 'C1cc(=C)ccc1'})
+    dao.add('molecule', {'smiles': 'C=CCC'})
+    dao.add('molecule', {'smiles': 'CC=CC'})
+    dao.add('molecule', {'smiles': 'C#CCCC'})
     dao.session.commit()
     dao.rollback(before=datetime(1979, 12, 12, 12, 12, 12))
     dao.session.commit()
-    query = dao.get('fragment')
+    query = dao.get('molecule')
     assert len(query) == 0

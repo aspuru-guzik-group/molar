@@ -2,10 +2,8 @@ from mdb import MDBClient
 import pandas as pd
 import pytest
 import os
-from random import random
-from sqlalchemy import exc
-from datetime import datetime
 from uuid import UUID
+
 
 @pytest.fixture
 def client():
@@ -17,31 +15,35 @@ def client():
 
 
 def test_get(client):
-    q = client.get('fragment')
+    q = client.get('molecule_type')
     assert isinstance(q, pd.DataFrame)
 
-    q = client.get('fragment', return_df=False)
+    q = client.get('molecule_type', return_df=False)
     assert not isinstance(q, pd.DataFrame)
 
+
 def test_add(client):
-    client.add('fragment', 
-            [{'smiles': 'abcd'}, {'smiles': 'dfge'}])
+    client.add('molecule',
+               [{'smiles': 'abcd'}, {'smiles': 'dfge'}])
+
 
 def test_get_id(client):
-    u = client.get_id('fragment', smiles='abcd')
-    UUID(u) # Validate uuid
+    u = client.get_id('molecule', smiles='abcd')
+    UUID(u)  # Validate uuid
     with pytest.raises(ValueError):
         client.get_id('molecule', smiles='Idontexistlol')
 
+
 def test_update(client):
-    q = client.get('fragment')
+    q = client.get('molecule')
     q.at[0, 'smiles'] = 'jkl;'
-    client.update('fragment', q)
-    
-    q = client.get('fragment', filters=[client.models.fragment.smiles == 'jkl;'])
+    client.update('molecule', q)
+
+    q = client.get('molecule', filters=[client.models.fragment.smiles == 'jkl;'])
     assert len(q) == 1
 
-def test_delete(client):
-    q = client.get('fragment')
 
-    client.delete('fragment', q['fragment_id'].tolist())
+def test_delete(client):
+    q = client.get('molecule')
+
+    client.delete('molecule', q['molecule_id'].tolist())
