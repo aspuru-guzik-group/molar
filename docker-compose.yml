@@ -4,16 +4,10 @@ services:
     postgres:
       restart: always
       image: 'tgaudin/postgresql-pgtap'
+      shm_size: '4gb'
       ports:
         - "5432:5432"
       volumes:
         - "./data:/var/lib/postgresql/data"
       environment:
         POSTGRES_HOST_AUTH_METHOD: trust
-    docs:
-      restart: always
-      image: 'nginx:mainline-alpine'
-      ports:
-        - "80:80"
-      volumes:
-        - "./docs/_build/html/:/usr/share/nginx/html:ro"
