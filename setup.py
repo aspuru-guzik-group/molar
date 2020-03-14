@@ -14,6 +14,7 @@ requirements = [
     "six==1.14.0",
     "toml==0.10.0",
     "tqdm==4.41.1",
+    "pubchempy==1.0.4"
 ]
 
 setup(
