@@ -21,10 +21,13 @@ setup(
     name='mdb',
     packages=find_packages(),
     author=['Theophile Gaudin'],
+    version='0.3',
     install_requires=requirements,
     setup_requires=["pytest-runner"],
     tests_require=['pytest', 'coverage'],
     extras_require={'doc': ['sphinx_rtd_theme',
                             'nbsphinx',
                             'jupyter']},
+    entry_points=('[console_scripts]\n'
+                  'mdbcli=mdb.cli:cli\n')
 )
