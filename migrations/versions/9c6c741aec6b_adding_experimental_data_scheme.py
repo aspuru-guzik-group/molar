@@ -177,7 +177,7 @@ def upgrade():
         sa.Column('uuid', pgsql.UUID, nullable=False, unique=True),
         sa.Column('created_on', sa.DateTime, nullable=False),
         sa.Column('updated_on', sa.DateTime, nullable=False),
-        sa.Column('name', sa.Text, nullable=False),
+        sa.Column('name', sa.Text, nullable=False, unique=True),
         schema='public'
     )
 

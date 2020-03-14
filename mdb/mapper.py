@@ -1,3 +1,5 @@
+import logging
+
 from . import utils
 
 
@@ -13,12 +15,17 @@ class SchemaMapper:
 
     It is meant to be used through MDBClient.
     """
-    def __init__(self, dao):
+    def __init__(self, dao, logger=None):
         self.dao = dao
+        self.logger = logger or logging.getLogger(__name__)
 
     def add_molecule_type(self, name):
-        event = self.dao.add('molecule_type', {'name': name})
-        self.dao.session.commit()
+        data = {'name': name}
+        event = self.dao.add('molecule_type', data)
+        f_event = self.dao.commit_or_fetch_event('molecule_type', data)
+        if f_event:
+            self.logger.warn(f"molecule_type {name} already exists (event: {f_event.uuid})")
+            return f_event
         return event
 
     def add_molecule(self, smiles, molecule_type_id, reactant_id=[],
@@ -32,10 +39,13 @@ class SchemaMapper:
                 data.update(pubchem_data)
 
         event = self.dao.add('molecule', data)
+        f_event = self.dao.commit_or_fetch_event('molecule', data)
+        if f_event:
+            self.logger.warn(f"Molecule {smiles} already exists (event: {f_event.uuid})")
+            return f_event
 
         if not isinstance(reactant_id, list):
             reactant_id = [reactant_id]
-        self.dao.session.commit()
         for order, id in enumerate(reactant_id):
             data = {'product_molecule_id': event.uuid,
                     'reactant_molecule_id': id,
@@ -60,7 +70,10 @@ class SchemaMapper:
     def add_calculation_type(self, name):
         data = {'name': name}
         event = self.dao.add('calculation_type', data)
-        self.dao.session.commit()
+        f_event = self.dao.commit_or_fetch_event('calculation_type', data)
+        if f_event:
+            self.logger.warn(f"calculation_type {name} already exist (event: {f_event.uuid})")
+            return f_event
         return event
 
     def add_calculation(self, input, output, command_line, calculation_type_id,
@@ -81,13 +94,19 @@ class SchemaMapper:
     def add_software(self, name, version):
         data = {'name': name, 'version': version}
         event = self.dao.add('software', data)
-        self.dao.session.commit()
+        f_event = self.dao.commit_or_fetch_event('software', data)
+        if f_event:
+            self.logger.warn(f"sofware {name}-{version} already exist (event: {f_event.uuid})")
+            return f_event
         return event
 
     def add_lab(self, name, short_name):
         data = {'name': name, 'short_name': short_name}
         event = self.dao.add('lab', data)
-        self.dao.session.commit()
+        f_event = self.dao.commit_or_fetch_event('lab', data)
+        if f_event:
+            self.logger.warn(f"lab {name} - {short_name} already exist (event: {f_event.uuid})")
+            return f_event
         return event
 
     def add_synthesis_machine(self, name, make, model, metadata, lab_id):
@@ -97,7 +116,10 @@ class SchemaMapper:
                 'make': make,
                 'model': model}
         event = self.dao.add('synthesis_machine', data)
-        self.dao.session.commit()
+        f_event = self.dao.commit_or_fetch_event('synthesis_machine', data)
+        if f_event:
+            self.logger.warn(f"synthesis_machine {name}-{make}-{model} already exist (event: {f_event.uuid})")
+            return f_event
         return event
 
     def add_synthesis(self, synthesis_machine_id, targeted_molecule_id, xdl, notes):
@@ -125,13 +147,19 @@ class SchemaMapper:
                 'model': model,
                 'metadata': metadata}
         event = self.dao.add('experiment_machine', data)
-        self.dao.session.commit()
+        f_event = self.dao.commit_or_fetch_event('experiment_machine', data)
+        if f_event:
+            self.logger.warn(f"experiment_machine {name}-{make}-{model} already exist (event: {f_event.uuid})")
+            return f_event
         return event
 
     def add_experiment_type(self, name):
         data = {'name': name}
         event = self.dao.add('experiment_type', data)
-        self.dao.session.commit()
+        f_event = self.dao.commit_or_fetch_event('experiment_type', data)
+        if f_event:
+            self.logger.warn(f"experiment_type {name} already exist (event: {f_event.uuid})")
+            return f_event
         return event
 
     def add_experiment(self, synthesis_id, molecule_id, experiment_machine_id, metadata,
@@ -200,9 +228,11 @@ class SchemaMapper:
         self.dao.session.commit()
         return event
 
-
     def add_data_unit(self, name):
         data = {'name': name}
         event = self.dao.add('data_unit', data)
-        self.dao.session.commit()
+        f_event = self.dao.commit_or_fetch_event('data_unit', data)
+        if f_event:
+            self.logger.warn(f"data_unit {name} already exist (event: {f_event.uuid})")
+            return f_event
         return event

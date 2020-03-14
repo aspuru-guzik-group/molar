@@ -18,17 +18,16 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA  02111-1301  USA.
 from paramiko import SSHClient, ProxyCommand
 import paramiko
-import coloredlogs
 import logging
-import threading
 import socketserver
 import select
+import socket
 
 
 class ForwardServer (socketserver.ThreadingTCPServer):
     daemon_threads = True
     allow_reuse_address = True
-    
+
 
 class Handler(socketserver.BaseRequestHandler):
     logger = logging.getLogger(__name__)
@@ -83,9 +82,18 @@ def connect(username, hostname, key_filename, proxycommand=None):
     ssh = SSHClient()
     ssh.set_missing_host_key_policy(paramiko.client.AutoAddPolicy)
     proxy = ProxyCommand(proxycommand) if proxycommand is not None else None
-    ssh.connect(username=username, 
+    ssh.connect(username=username,
                 hostname=hostname,
                 key_filename=key_filename,
                 look_for_keys=False,
                 sock=proxy)
     return ssh.get_transport()
+
+
+def get_free_tcp_port():
+    # TODO this is quite hacky, it has race condition problem
+    tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    tcp.bind(('', 0))
+    addr, port = tcp.getsockname()
+    tcp.close()
+    return port

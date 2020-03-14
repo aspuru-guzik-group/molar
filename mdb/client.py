@@ -1,11 +1,8 @@
-from functools import partial
-
 import pandas as pd
 from tqdm import tqdm
+import sqlalchemy
 from sqlalchemy import and_
-from paramiko import SSHClient, ProxyCommand
 from threading import Thread
-import psycopg2
 
 from . import ssh
 from . import database as db
@@ -20,12 +17,13 @@ class MDBClient(mapper.SchemaMapper):
     :param hostname: database hostname (string)
     :param username: database username (string)
     :param password: database password (string)
-    :param database_name: name of the database to access (string)
+    :param database: name of the database to access (string)
+    :param port: port to use to connect to the database (integer, default: 5432)
     :param use_tqdm: how a tqdm progressbar if set to True. (boolean, optional)
 
     """
-    def __init__(self, hostname, username, password, database, use_tqdm=True):
-        self.sql_url = f"postgresql://{username}:{password}@{hostname}/{database}"
+    def __init__(self, hostname, username, password, database, port=5432, use_tqdm=True):
+        self.sql_url = f"postgresql://{username}:{password}@{hostname}:{port}/{database}"
         Session, engine, models = db.init_db(self.sql_url)
         self.session = Session()
         self.engine = engine
@@ -108,7 +106,7 @@ class MDBClient(mapper.SchemaMapper):
                 raise ValueError(f'{table_name} has no column {k}!')
             filters.append(field == v)
 
-        q = self.get(table_name, filters=filters, return_df=False, limit=1)
+        q = self.get(table_name, filters=filters, return_df=False, limit=1).one_or_none()
         if q is None:
             raise ValueError(f'No row with the specified filters where found.  Filters: {filters}')
         return getattr(q, f'{table_name}_id')
@@ -262,14 +260,15 @@ class MDBClientWithSSH(MDBClient):
     def __init__(self, hostname, username, password, database,
             ssh_username, ssh_hostname, ssh_keyfile, use_tqdm=True):
         transport = ssh.connect(ssh_username, ssh_hostname, ssh_keyfile)
-        forward_server = ssh.tunnel_factory(5432, hostname, 5432, transport)
+        port = ssh.get_free_tcp_port()
+        forward_server = ssh.tunnel_factory(port, hostname, 5432, transport)
         server_thread = Thread(target=forward_server.serve_forever)
         server_thread.daemon = True
         server_thread.start()
         self.ssh_server = forward_server
-        
-        super().__init__('localhost', username, password, database)
-        
+
+        super().__init__('localhost', username, password, database, port)
+
     def __delete__(self):
         super().__delete__()
         self.ssh_server.shutdown()
@@ -309,7 +308,7 @@ class DataAccessObject:
         order_by_col = getattr(model, 'updated_on', None)
         if order_by_col is None:
             order_by_col = getattr(model, 'timestamp', None)
-        
+
         if order_by is None:
             order_by = order_by_col.desc()
         query = self.session.query(model)
@@ -325,18 +324,16 @@ class DataAccessObject:
                 filter = and_(filter, f)
             query = query.filter(filter)
         query = query.order_by(order_by)
-        
+
         if limit is None:
             return query.all()
-        elif limit == 1:
-            return query.one_or_none()
 
         if offset is not None:
             query = query.offset(offset)
         query = query.limit(limit)
-        
+
         return query
-        
+
     def add(self, table_name, data):
         """
         Adds data to the database. This corresponds to a 'create' event on the
@@ -397,3 +394,28 @@ class DataAccessObject:
         event = self.models.eventstore(**params)
         self.session.add(event)
         return event
+
+    def commit_or_fetch_event(self, table, data):
+        """
+        Tries to commit the current transation and if it fails,
+        fetches the corresponding event in the eventstore table.
+        """
+        try:
+            self.session.commit()
+        except sqlalchemy.exc.IntegrityError as ex:
+            if 'UniqueViolation' in ex._message():
+                self.session.rollback()
+                model = getattr(self.models, table)
+                filters = True
+                for k, v in data.items():
+                    filters = and_(getattr(model, k) == v)
+                out = self.get('eventstore',
+                               filters=filters,
+                               limit=1,
+                               order_by=self.models.eventstore.timestamp.desc())
+                if out is None:
+                    raise ex
+                return out.one()
+            else:
+                self.session.rollback()
+                raise ex

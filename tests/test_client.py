@@ -39,7 +39,7 @@ def test_update(client):
     q.at[0, 'smiles'] = 'jkl;'
     client.update('molecule', q)
 
-    q = client.get('molecule', filters=[client.models.fragment.smiles == 'jkl;'])
+    q = client.get('molecule', filters=[client.models.molecule.smiles == 'jkl;'])
     assert len(q) == 1
 
 

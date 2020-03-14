@@ -20,8 +20,9 @@ def mapper():
 
 
 def test_add_molecule_type(mapper):
-    mapper.add_molecule_type('fragment')
-
+    ev1 = mapper.add_molecule_type('fragment')
+    ev2 = mapper.add_molecule_type('fragment')
+    assert ev1.uuid == ev2.uuid
 
 def test_add_molecule(mapper):
     mol_type = mapper.dao.get('molecule_type')
@@ -81,16 +82,24 @@ def test_add_xyz_data_calculation(mapper):
                                     units[0].data_unit_id,
                                     units[0].data_unit_id)
 
+
 def test_add_lab(mapper):
-    mapper.add_lab('Random lab', 'LAB')
+    ev1 = mapper.add_lab('Random lab', 'LAB')
+    ev2 = mapper.add_lab('Random lab', 'LAB')
+    assert ev1.uuid == ev2.uuid
 
 
 def test_add_synthesis_machine(mapper):
     lab = mapper.dao.get('lab')
-    mapper.add_synthesis_machine('chemputer',
-                                 'Cronin(c)',
-                                 'v1.2',
-                                 {'version': 1324}, lab[0].lab_id)
+    ev1 = mapper.add_synthesis_machine('chemputer',
+                                       'Cronin(c)',
+                                       'v1.2',
+                                       {'version': 1324}, lab[0].lab_id)
+    ev2 = mapper.add_synthesis_machine('chemputer',
+                                       'Cronin(c)',
+                                       'v1.2',
+                                       {'version': 1324}, lab[0].lab_id)
+    assert ev1.uuid == ev2.uuid
 
 
 def test_add_synthesis(mapper):
@@ -106,18 +115,28 @@ def test_add_synthesis_molecule(mapper):
 
 
 def test_add_experiment_type(mapper):
-    mapper.add_experiment_type("stupid_experiment")
+    ev1 = mapper.add_experiment_type("stupid_experiment")
+    ev2 = mapper.add_experiment_type("stupid_experiment")
+    assert ev1.uuid == ev2.uuid
 
 
 def test_add_experiment_machine(mapper):
     type_ = mapper.dao.get('experiment_type')
     lab = mapper.dao.get('lab')
-    mapper.add_experiment_machine('hplc',
-                                  'brand',
-                                  '3000',
-                                  {'metadata': 'nop'},
-                                  type_[0].experiment_type_id,
-                                  lab[0].lab_id)
+
+    ev1 = mapper.add_experiment_machine('hplc',
+                                        'brand',
+                                        '3000',
+                                        {'metadata': 'nop'},
+                                        type_[0].experiment_type_id,
+                                        lab[0].lab_id)
+    ev2 = mapper.add_experiment_machine('hplc',
+                                        'brand',
+                                        '3000',
+                                        {'metadata': 'nop'},
+                                        type_[0].experiment_type_id,
+                                        lab[0].lab_id)
+    assert ev1.uuid == ev2.uuid
 
 
 def test_add_experiment(mapper):

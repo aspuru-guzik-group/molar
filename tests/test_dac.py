@@ -29,7 +29,7 @@ def test_get(dao):
 
 def test_update(dao):
     query = dao.get('molecule')
-    dao.update('molecule', {'smiles': 'CCC=C'}, query[0].fragment_id)
+    dao.update('molecule', {'smiles': 'CCC=C'}, query[0].molecule_id)
     dao.session.commit()
     query = dao.get('molecule')
     assert query[0].smiles == 'CCC=C'
@@ -37,7 +37,7 @@ def test_update(dao):
 
 def test_delete(dao):
     query = dao.get('molecule')
-    dao.delete('molecule', query[0].fragment_id)
+    dao.delete('molecule', query[0].molecule_id)
     dao.session.commit()
     query = dao.get('molecule')
     assert len(query) == 0
