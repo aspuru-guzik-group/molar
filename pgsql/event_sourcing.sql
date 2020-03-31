@@ -93,6 +93,9 @@ begin
                 q2 = q2 || format(', cast( %L as float8[])',
                                   (select array_agg(arr::text)
                                      from jsonb_array_elements((new.data->>rec.col_name)::jsonb) arr)::text);
+            when 'integer' then
+                q2 = q2 || format(', cast( %L as numeric )::integer',
+                                  new.data->>rec.col_name);
             when 'character varying' then
                 q2 = q2 || format(', cast( %L as character varying(%s))',
                                   new.data->>rec.col_name,
@@ -159,6 +162,10 @@ begin
                                   rec.col_name, 
                                   (select array_agg(arr::text)
                                      from jsonb_array_elements((new.data->>rec.col_name)::jsonb) arr)::text);
+            when rec.col_type = 'integer' then
+                q1 = q1 || format(', %I = cast( %L as numeric )::integer',
+                                  rec.col_name,
+                                  new.data->>rec.col_name);
             when rec.col_type = 'character varying' then
                 q1 = q1 || format(', %I = cast( %L as character varying(%s) )',
                                   rec.col_name,
