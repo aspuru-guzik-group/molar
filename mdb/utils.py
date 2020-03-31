@@ -5,7 +5,7 @@ import re
 def pubchem_lookup(smiles):
     try:
         out = pcp.get_compounds(smiles, namespace='smiles', searchtype='identity')
-    except pcp.ServerError:
+    except:
         return None
     if len(out) < 1:
         return None
