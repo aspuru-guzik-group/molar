@@ -81,6 +81,8 @@ class MDBClient(mapper.SchemaMapper):
         df = pd.DataFrame.from_records([d.__dict__ for d in data])
         if '_sa_instance_state' in df.columns:
             del df['_sa_instance_state']
+            
+        df = df.replace({pd.np.nan: None})
         return df
     
     def get_id(self, table_name, **kwargs):
@@ -142,13 +144,16 @@ class MDBClient(mapper.SchemaMapper):
         if not isinstance(data, pd.DataFrame):
             raise NotImplementedError("Incorrect data types")
 
+        data = data.replace({pd.np.nan: None})
+        
         iter = data.iterrows()
         if self.use_tqdm:
             iter = tqdm(iter, total=len(data))
 
         events = []
         for i, record in enumerate(iter):
-            events.append(self.dao.add(table_name, record[1].to_dict()))
+            rec = record[1].replace({pd.np.nan: None})
+            events.append(self.dao.add(table_name, rec.to_dict()))
             if i % 500 == 0:
                 self.session.commit()
         self.session.commit()
@@ -186,6 +191,8 @@ class MDBClient(mapper.SchemaMapper):
                               "but expected either dict, list or "
                               "pandas.DataFrame"))
 
+        data = data.replace({pd.np.nan: None})
+
         if not id:
             id = data[f'{table_name}_id'].tolist()
             del data[f'{table_name}_id']
@@ -205,7 +212,8 @@ class MDBClient(mapper.SchemaMapper):
 
         events = []
         for i, (record, id) in enumerate(zip(iter, id)):
-            events.append(self.dao.update(table_name, record[1].to_dict(), id))
+            rec = record[1].replace({pd.np.nan: None})
+            events.append(self.dao.update(table_name, rec.to_dict(), id))
             if i % 500 == 0:
                 self.session.commit()
         self.session.commit()
