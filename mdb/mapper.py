@@ -162,12 +162,16 @@ class SchemaMapper:
             return f_event
         return event
 
-    def add_experiment(self, synthesis_id, molecule_id, experiment_machine_id, metadata,
-                       notes, raw_data_path, parent_experiment_id=None):
+    def add_experiment(self, experiment_machine_id, metadata,
+                       notes, raw_data_path, synthesis_id=None,
+                       molecule_id=None, parent_experiment_id=None):
         data = {'experiment_machine_id': experiment_machine_id,
                 'metadata': metadata,
                 'raw_data_path': raw_data_path,
                 'notes': notes}
+        if (synthesis_id is None and molecule_id is None) or \
+           (synthesis_id is not None and molecule_id is not None):
+            raise ValueError('Either synthesis_id xor molecule_id most be specified')
         if synthesis_id is not None:
             data['synthesis_id'] = synthesis_id
         if molecule_id is not None:
