@@ -447,7 +447,7 @@ class DataAccessObject:
                     raise ex
 
                 # Returning uuid as str
-                out[0]._processors[0] = lambda x : str(x)
+                out[0]._processors[0] = lambda x: str(x)
                 return out[0]
             else:
                 self.session.rollback()

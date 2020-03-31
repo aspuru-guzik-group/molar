@@ -143,20 +143,18 @@ def test_add_experiment(mapper):
     machine = mapper.dao.get('experiment_machine')
     synth = mapper.dao.get('synthesis')
     mols = mapper.dao.get('molecule')
-    event = mapper.add_experiment(synth[0].synthesis_id,
-                                  None,
-                                  machine[0].experiment_machine_id,
-                                  {'concentration': '10M/L'},
-                                  'blablabla',
-                                  'C:\\somewhere\\ona\\machine')
+    event = mapper.add_experiment(synthesis_id=synth[0].synthesis_id,
+                                  experiment_machine_id=machine[0].experiment_machine_id,
+                                  metadata={'concentration': '10M/L'},
+                                  nodes='blablabla',
+                                  raw_data_path='C:\\somewhere\\ona\\machine')
     mapper.dao.session.commit()
 
-    mapper.add_experiment(None,
-                          mols[0].molecule_id,
-                          machine[0].experiment_machine_id,
-                          {'concentration': '10M/L'},
-                          'exp part 2',
-                          'C:\\somewhereelse\\ona\\machine',
+    mapper.add_experiment(molecule_id=mols[0].molecule_id,
+                          experiment_machine_id=machine[0].experiment_machine_id,
+                          metadata={'concentration': '10M/L'},
+                          notes='exp part 2',
+                          raw_data_path='C:\\somewhereelse\\ona\\machine',
                           parent_experiment_id=event.uuid)
     mapper.dao.session.commit()
     mapper.dao.rollback(before=datetime(1979, 12, 12, 12, 12, 12))
