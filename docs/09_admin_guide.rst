@@ -12,13 +12,14 @@ Command Line Interface
 ----------------------
 .. _command_line_interface:
 
-There is a cli, but it's poorly documented.
+There is a cli, it does stuff for administration mostly (creating db, dropping
+db, backup and restore).
 
 Try it!
 
 .. code-block:: shell
 
-    $ python -m mdb.cli.cli --help
+    $ mdbcli --help
 
 
 

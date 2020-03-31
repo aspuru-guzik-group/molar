@@ -72,16 +72,16 @@ def upgrade():
     op.add_column('experiment_machine',
                   sa.Column('model', sa.Text))
     op.execute(('alter table only experiment_machine\n'
-                '  add constraint experiment_machine_unique_make_model_name\n'
-                '          unique (make, model, name)\n'))
+                '  add constraint experiment_machine_unique_make_model_name_lab\n'
+                '          unique (make, model, name, lab_id)\n'))
 
     op.add_column('synthesis_machine',
                   sa.Column('make', sa.Text))
     op.add_column('synthesis_machine',
                   sa.Column('model', sa.Text))
     op.execute(('alter table only synthesis_machine\n'
-                '  add constraint synthesis_machine_unique_make_model_name\n'
-                '          unique (make, model, name)\n'))
+                '  add constraint synthesis_machine_unique_make_model_name_lab\n'
+                '          unique (make, model, name, lab_id)\n'))
 
     # Experiment
     #   -> Adding a link to previous experiment

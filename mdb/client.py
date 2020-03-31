@@ -1,8 +1,10 @@
 import pandas as pd
 from tqdm import tqdm
+import logging
 import sqlalchemy
-from sqlalchemy import and_
+from sqlalchemy import and_, text
 from threading import Thread
+import json
 
 from . import ssh
 from . import database as db
@@ -22,8 +24,9 @@ class MDBClient(mapper.SchemaMapper):
     :param use_tqdm: how a tqdm progressbar if set to True. (boolean, optional)
 
     """
-    def __init__(self, hostname, username, password, database, port=5432, use_tqdm=True):
+    def __init__(self, hostname, username, password, database, port=5432, use_tqdm=True, logger=None):
         self.sql_url = f"postgresql://{username}:{password}@{hostname}:{port}/{database}"
+        self.logger = logger or logging.getLogger(__name__)
         Session, engine, models = db.init_db(self.sql_url)
         self.session = Session()
         self.engine = engine
@@ -116,6 +119,9 @@ class MDBClient(mapper.SchemaMapper):
         This method can add data to any existing table in the database. This
         method will returns the events created in the eventstore which contains
         some information about the object such as its id.
+
+        It can be used to perform "batch" operation, although it will fail if a
+        constraint is violated.
 
         :param table_name: name of the table (string)
         :param data: data to add (list, pandas.DataFrame or dict)
@@ -318,7 +324,7 @@ class DataAccessObject:
             assert model is not None, f'{t} does not correspond to any table!'
             query = query.join(model)
 
-        if filters:
+        if filters is not None:
             filter = True
             for f in filters:
                 filter = and_(filter, f)
@@ -395,7 +401,7 @@ class DataAccessObject:
         self.session.add(event)
         return event
 
-    def commit_or_fetch_event(self, table, data):
+    def commit_or_fetch_event(self, table_name, data):
         """
         Tries to commit the current transation and if it fails,
         fetches the corresponding event in the eventstore table.
@@ -405,17 +411,36 @@ class DataAccessObject:
         except sqlalchemy.exc.IntegrityError as ex:
             if 'UniqueViolation' in ex._message():
                 self.session.rollback()
-                model = getattr(self.models, table)
-                filters = True
+                filters = ''
                 for k, v in data.items():
-                    filters = and_(getattr(model, k) == v)
-                out = self.get('eventstore',
-                               filters=filters,
-                               limit=1,
-                               order_by=self.models.eventstore.timestamp.desc())
-                if out is None:
+                    if isinstance(v, dict):
+                        filters += f"data->'{k}' = '{json.dumps(v)}'::jsonb and "
+                        continue
+                    filters += f"data->>'{k}' = '{v}' and "
+
+                # Single query to retrieve the event
+                sql = text(f"""
+                    select uuid,
+                           type,
+                           jsonb_agg(data)->>-1 as data,
+                           string_agg("event", ',') as event,
+                           max(timestamp) as timestamp
+                      from sourcing.eventstore
+                      join {table_name}
+                        on eventstore.uuid = {table_name}_id
+                     where {filters[:-4]}
+                  group by uuid, type
+                    having not right(string_agg("event", ','), 6) = 'delete'
+                  order by min(eventstore.id) asc;
+                """)
+                out = self.session.execute(sql).fetchall()
+                # It's a UniqueViolation... there should be only one
+                if len(out) != 1:
                     raise ex
-                return out.one()
+
+                # Returning uuid as str
+                out[0]._processors[0] = lambda x : str(x)
+                return out[0]
             else:
                 self.session.rollback()
                 raise ex

@@ -28,7 +28,7 @@ Installing the backend locally
 
 Even though running the database locally is not necessary, it may be useful for developpment purpose.
 
-Using `docker-compose <https://docs.docker.com/compose/>` is a convenient way to run postgresql locally:
+Using `docker-compose <https://docs.docker.com/compose/>`_ is a convenient way to run postgresql locally:
 
 .. code-block:: bash
 
@@ -39,7 +39,7 @@ Using `docker-compose <https://docs.docker.com/compose/>` is a convenient way to
     $ mkdir -p data
     $ docker-compose up -d postgres
     # Then when postgres is ready:
-    $ python -m mdb.cli.cli admin create-db \
+    $ mdbcli admin create-db \
         -u postgres \
         -p '' \
         -h localhost \
