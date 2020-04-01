@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from tqdm import tqdm
 import logging
 import sqlalchemy
@@ -82,7 +83,7 @@ class MDBClient(mapper.SchemaMapper):
         if '_sa_instance_state' in df.columns:
             del df['_sa_instance_state']
             
-        df = df.replace({pd.np.nan: None})
+        df = df.replace({np.nan: None})
         return df
     
     def get_id(self, table_name, **kwargs):
@@ -144,7 +145,7 @@ class MDBClient(mapper.SchemaMapper):
         if not isinstance(data, pd.DataFrame):
             raise NotImplementedError("Incorrect data types")
 
-        data = data.replace({pd.np.nan: None})
+        data = data.replace({np.nan: None})
         
         iter = data.iterrows()
         if self.use_tqdm:

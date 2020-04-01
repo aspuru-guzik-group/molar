@@ -146,7 +146,7 @@ def test_add_experiment(mapper):
     event = mapper.add_experiment(synthesis_id=synth[0].synthesis_id,
                                   experiment_machine_id=machine[0].experiment_machine_id,
                                   metadata={'concentration': '10M/L'},
-                                  nodes='blablabla',
+                                  notes='blablabla',
                                   raw_data_path='C:\\somewhere\\ona\\machine')
     mapper.dao.session.commit()
 
