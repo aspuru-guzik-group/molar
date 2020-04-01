@@ -24,7 +24,7 @@ class SchemaMapper:
         event = self.dao.add('molecule_type', data)
         f_event = self.dao.commit_or_fetch_event('molecule_type', data)
         if f_event:
-            self.logger.warn(f"molecule_type {name} already exists (event: {f_event.uuid})")
+            self.logger.warning(f"molecule_type {name} already exists (event: {f_event.uuid})")
             return f_event
         return event
 
@@ -41,7 +41,7 @@ class SchemaMapper:
         event = self.dao.add('molecule', data)
         f_event = self.dao.commit_or_fetch_event('molecule', data)
         if f_event:
-            self.logger.warn(f"Molecule {smiles} already exists (event: {f_event.uuid})")
+            self.logger.warning(f"Molecule {smiles} already exists (event: {f_event.uuid})")
             return f_event
 
         if not isinstance(reactant_id, list):
@@ -72,7 +72,7 @@ class SchemaMapper:
         event = self.dao.add('calculation_type', data)
         f_event = self.dao.commit_or_fetch_event('calculation_type', data)
         if f_event:
-            self.logger.warn(f"calculation_type {name} already exist (event: {f_event.uuid})")
+            self.logger.warning(f"calculation_type {name} already exist (event: {f_event.uuid})")
             return f_event
         return event
 
@@ -96,7 +96,7 @@ class SchemaMapper:
         event = self.dao.add('software', data)
         f_event = self.dao.commit_or_fetch_event('software', data)
         if f_event:
-            self.logger.warn(f"sofware {name}-{version} already exist (event: {f_event.uuid})")
+            self.logger.warning(f"sofware {name}-{version} already exist (event: {f_event.uuid})")
             return f_event
         return event
 
@@ -105,7 +105,7 @@ class SchemaMapper:
         event = self.dao.add('lab', data)
         f_event = self.dao.commit_or_fetch_event('lab', data)
         if f_event:
-            self.logger.warn(f"lab {name} - {short_name} already exist (event: {f_event.uuid})")
+            self.logger.warning(f"lab {name} - {short_name} already exist (event: {f_event.uuid})")
             return f_event
         return event
 
@@ -118,7 +118,7 @@ class SchemaMapper:
         event = self.dao.add('synthesis_machine', data)
         f_event = self.dao.commit_or_fetch_event('synthesis_machine', data)
         if f_event:
-            self.logger.warn(f"synthesis_machine {name}-{make}-{model} already exist (event: {f_event.uuid})")
+            self.logger.warning(f"synthesis_machine {name}-{make}-{model} already exist (event: {f_event.uuid})")
             return f_event
         return event
 
@@ -149,7 +149,7 @@ class SchemaMapper:
         event = self.dao.add('experiment_machine', data)
         f_event = self.dao.commit_or_fetch_event('experiment_machine', data)
         if f_event:
-            self.logger.warn(f"experiment_machine {name}-{make}-{model} already exist (event: {f_event.uuid})")
+            self.logger.warning(f"experiment_machine {name}-{make}-{model} already exist (event: {f_event.uuid})")
             return f_event
         return event
 
@@ -158,7 +158,7 @@ class SchemaMapper:
         event = self.dao.add('experiment_type', data)
         f_event = self.dao.commit_or_fetch_event('experiment_type', data)
         if f_event:
-            self.logger.warn(f"experiment_type {name} already exist (event: {f_event.uuid})")
+            self.logger.warning(f"experiment_type {name} already exist (event: {f_event.uuid})")
             return f_event
         return event
 
@@ -237,6 +237,6 @@ class SchemaMapper:
         event = self.dao.add('data_unit', data)
         f_event = self.dao.commit_or_fetch_event('data_unit', data)
         if f_event:
-            self.logger.warn(f"data_unit {name} already exist (event: {f_event.uuid})")
+            self.logger.warning(f"data_unit {name} already exist (event: {f_event.uuid})")
             return f_event
         return event
