@@ -28,6 +28,9 @@ Installing the backend locally
 
 Even though running the database locally is not necessary, it may be useful for developpment purpose.
 
+Make sure to first install `psql <http://postgresguide.com/setup/install.html>`_, and some postgresql-client (the client version doesnt matter that much, see `here <postgresql-client>`_).
+
+
 Using `docker-compose <https://docs.docker.com/compose/>`_ is a convenient way to run postgresql locally:
 
 .. code-block:: bash
@@ -49,6 +52,10 @@ Using `docker-compose <https://docs.docker.com/compose/>`_ is a convenient way t
         -c alembic.ini \
         --admin_pass '' \
         --user_pass ''
+If the username and database name were not configured as above then the line ``sqlalchemy.url=`` in the ``alembic.ini`` file  must be changed accordingly.
 
-The command creates a database named ``mdb``. More info about the command line tool can be found in the :ref:`command_line_interface` section.
+This command creates a database named ``mdb``. More info about the command line tool can be found in the :ref:`command_line_interface` section.
+
+.. note:: To test your install, try accessing the db with ``psql -U <user> -h <host> -d <db_name>``. Then maybe try running ``select * from public.lab;``.
+
 
