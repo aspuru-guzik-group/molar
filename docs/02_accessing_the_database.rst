@@ -1,6 +1,8 @@
 Accessing the database
 ======================
 
+This section is meant for matterlab's collaborators and research partner. If you do not have access to scinet or the matter's network, please refer to the previous section.
+
 The machine running the database is physically hosted by scinet.utoronto.ca, but it can also be access through a machine in the matterlab's network.
 
 So there are 3 different cases:
@@ -50,6 +52,7 @@ If you are neither in the matterlab or scinet's network, you need to create a cl
 
 
 .. code-block:: python
+
     client = MDBClientWithSSH(hostname='10.21.101.51',
                               username='postgres',
                               password='',
@@ -62,9 +65,7 @@ If you are neither in the matterlab or scinet's network, you need to create a cl
 Using a configuration file
 --------------------------
 
-Alternatively it is possible to use a config file. It is probably the most convenient way to store credentials and use the client.
-
-Here is an example of configuration file:
+Alternatively it is possible to create a configuration file to store you credentials. Here below is a template for this configuration file:
 
 .. code-block:: toml
 
@@ -84,14 +85,10 @@ Here is an example of configuration file:
     proxy_cmd = ''
 
 
-If you access the database locally (through ``mdb.matterlab.sandbox`` or ``nrcdb`` you should set ``use_ssh`` to false.
-
-And how to use this file:
+To load this configutation with the client:
 
 .. code-block:: python
 
     import mdb
 
     client = mdb.load_client_from_config('path/to/config_file.conf')
-    
-

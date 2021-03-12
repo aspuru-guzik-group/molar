@@ -4,9 +4,20 @@
    contain the root `toctree` directive.
 
 *********
-MadnessDB
+MapleDB
 *********
 
+MapleDB is a database meant to store computational and experimental data coming from chemistry labs. It is designed with several goals in mind:
+
+ * be resilient to data-loss, by implementing ``event sourcing`` which tracks all changes thus allowing to rollback the database at any point of time if needed,
+ * facilitate data sharing among teams,
+ * lower the "access barrier" to the database with a python client that has a tight integration with `PyData's pandas <https://pandas.pydata.org/>`_ 
+ * grant users some flexibility in the structure by implementing part of the schema with `NewSQL <https://en.wikipedia.org/wiki/NewSQL>`_.
+
+A typical usage of MapleDB is to be the cornerstone of any data intensive project at the interface between chemistry, machine learning and automation as illustrated by the following picture.
+
+.. raw:: html
+    :file: _images/data_framework.svg
 
 .. toctree::
    :maxdepth: 2
