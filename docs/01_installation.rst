@@ -20,7 +20,8 @@ Installing the backend
 
 You will need a running `PostgreSQL <https://www.postgresql.org>`_ server to install the database. You can choose to run a database locally, or choose a cloud provider that proposes managed database (`IBM Cloud <https://www.ibm.com/cloud/databases-for-postgresql>`_, `DigitalOcean <https://www.digitalocean.com/products/managed-databases/>`_, `Azure <https://azure.microsoft.com/en-us/services/postgresql/>`_, `ElephantSQL <https://www.elephantsql.com/>`_ to name a few).
 
-`Docker-compose <https://docs.docker.com/compose/>`_ is a convenient way to run postgresql locally for trial/developpment purposes (`ie` not production).
+
+Using `docker-compose <https://docs.docker.com/compose/>`_ is a convenient way to run postgresql locally:
 
 .. code-block:: bash
 
@@ -41,6 +42,10 @@ You will need a running `PostgreSQL <https://www.postgresql.org>`_ server to ins
         -c alembic.ini \
         --admin_pass '' \
         --user_pass ''
+If the username and database name were not configured as above then the line ``sqlalchemy.url=`` in the ``alembic.ini`` file  must be changed accordingly.
 
-The command creates a database named ``mdb``. More info about the command line tool can be found in the :ref:`command_line_interface` section.
+This command creates a database named ``mdb``. More info about the command line tool can be found in the :ref:`command_line_interface` section.
+
+.. note:: To test your install, try accessing the db with ``psql -U <user> -h <host> -d <db_name>``. Then maybe try running ``select * from public.lab;``.
+
 
