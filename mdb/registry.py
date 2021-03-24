@@ -1,37 +1,58 @@
-from typing import List
+from typing import List, Dict, Optional
 
-REGISTRIES = {"mappers": {}, "queries": {}, "sql": {}}
+REGISTRIES = {"mappers": [], "queries": [], "sql": []}
 
 
-def register_mapper(name: str, tables: List[str] = None, functions: List[str] = None):
+def register_mapper(
+    name: str,
+    table: str,
+    requirements: Optional[List[Dict[str, str]]] = None,
+    requirements_bonus: int = 0,
+):
     def register_mapper_inner(func):
-        if name in REGISTRIES["mapper"]:
-            raise ValueError("Cannot register duplicate schema mapper")
-        REGISTRIES["mapper"][name] = {
-            "func": func,
-            "tables": tables,
-            "functions": functions,
-        }
+        REGISTRIES["mapper"].append(
+            {
+                "name": name,
+                "table": table,
+                "func": func,
+                "requirements": requirements,
+                "requirements_bonus": requirements_bonus,
+            }
+        )
         return func
 
     return register_mapper_inner
 
 
-def register_query(name: str, tables: List[str]):
+def register_query(
+    name: str, requirements: Optional[List[Dict[str, str]]], requirements_bonus: int = 0
+):
     def register_query_inner(func):
-        if name in REGISTRIES["query"]:
-            raise ValueError("Cannot register duplicate query")
-        REGISTRIES["query"][name] = {"func": func, "tables": tables}
+        REGISTRIES["query"].append(
+            {
+                "name": name,
+                "func": func,
+                "requirements": requirements,
+                "requirement_bonus": requirements_bonus,
+            }
+        )
         return func
 
     return register_query_inner
 
 
-def register_sql(name: str):
+def register_sql(
+    name: str, requirements: Optional[List[Dict[str, str]]], requirements_bonus: int = 0
+):
     def register_sql_inner(func):
-        if name in REGISTRIES["sql"]:
-            raise ValueError("Cannot register duplicate sql query")
-        REGISTRIES["sql"][name] = func
+        REGISTRIES["sql"].append(
+            {
+                "name": name,
+                "func": func,
+                "requirements": requirements,
+                "requirements_bonus": requirements_bonus,
+            }
+        )
         return func
 
     return register_sql_inner

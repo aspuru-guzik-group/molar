@@ -1,54 +1,62 @@
 import json
 import logging
+from typing import Optional
 
 import numpy as np
 import pandas as pd
 import sqlalchemy
+from rich.logging import RichHandler
 from sqlalchemy import and_, text
 from tqdm import tqdm
 
 from . import database as db
-from .mappers import *
-
-# from .queries import *
-# from .sql_queries import *
+from .config import ClientConfig
 from .registry import REGISTRIES
 
-logger = logging.getLogger(__name__)
+FORMAT = "%(message)s"
+logging.basicConfig(
+    level="NOTSET", format=FORMAT, datefmt="[%X]", handlers=[RichHandler()]
+)
 
 
 class Client:
     def __init__(
         self,
-        hostname: str,
-        username: str,
-        password: str,
-        database: str,
-        port: int = 5432,
-        return_pandas_dataframe: bool = True,
+        cfg: ClientConfig,
+        logger: Optional[logging.Logger] = None,
     ):
-        sql_url = f"postgresql://{username}:{password}@{hostname}:{port}/{database}"
-        Session, engine, models = db.init_db(sql_url)
+        self.cfg = cfg
+        Session, engine, models = db.init_database(self.cfg.sql_url)
         self.session = Session()
         self.engine = engine
         self.models = models
+        self.logger = logger or logging.getLogger("molar")
 
-        for mapper_name, mapper_dict in REGISTRIES["mappers"].items():
-            setattr(
-                self,
-                mapper_name,
-                self.mapper_decorator(mapper_dict["func"], mapper_dict["table"]),
-            )
-
-        for query_name, query_func in REGISTRIES["queries"].items():
-            setattr(self, query_name, self.query_decorator(query_func))
-
-        for sql_query_name, query_func in REGISTRIES["sql"].items():
-            setattr(self, sql_query_name, self.sql_query_execitor(query_func))
+        if self.logger:
+            self.logger.setLevel(cfg.log_level)
 
         self.dao = DataAccessObject(self.session, self.models)
 
-        self.return_pandas_dataframe = return_pandas_dataframe
+        capabilities = db.fetch_database_capabilities(self.session)
+
+        for mapper in REGISTRIES["mappers"]:
+            setattr(
+                self,
+                mapper["name"],
+                self.mapper_decorator(mapper["func"], mapper["table"]),
+            )
+
+        for query in REGISTRIES["queries"]:
+            setattr(
+                self, query["name"], self.query_decorator(query["func"], query["table"])
+            )
+
+        for sql_query in REGISTRIES["sql"]:
+            setattr(
+                self,
+                sql_query["name"],
+                self.sql_query_decorator(sql_query["func"]),
+            )
 
     def __delete__(self):
         self.session.close()
@@ -59,13 +67,14 @@ class Client:
             event = self.dao.add(table, data)
             issue = self.dao.commit_or_fetch_event(table, data)
             if issue:
-                logger.warn(
+                self.logger.warn(
                     (
                         f"Could not add new row to table {table} "
-                        "with data {data} because it already exists!"
+                        f"with data {data} because it already exists!"
                     )
                 )
                 return issue
+            self.logger.debug(f"Adding item to table {table} with data {data}")
             return event
 
         return inner
@@ -74,7 +83,7 @@ class Client:
         def inner(*args, **kwargs):
             query = func(*args, **kwargs)
             data = self.dao.get(table, **query)
-            if self.return_pandas_dataframe:
+            if self.cfg.return_pandas_dataframe:
                 records = [d.__dict__ for d in data]
                 df = pd.DataFrame.from_records(records)
                 return df.replace({np.nan: None})
@@ -86,19 +95,10 @@ class Client:
         def inner(*args, **kwargs):
             sql = text(func(*args, **kwargs))
             data = self.session.execute(sql).fetchall()
-            # what if we want a dataframe here?
+            # TODO what if we want a dataframe here?
             return data
 
         return inner
-
-    @staticmethod
-    def from_config_file(config_file):
-        import toml
-
-        with open(config_file, "r") as f:
-            config = toml.load(F)
-
-        return Client(**config["database"])
 
 
 class DataAccessObject:
