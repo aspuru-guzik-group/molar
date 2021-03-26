@@ -1,6 +1,11 @@
-from typing import List, Dict, Optional
+from typing import Any, Dict, List, Optional, Union
 
-REGISTRIES = {"mappers": [], "queries": [], "sql": []}
+REGISTRIES: Dict[str, Any] = {
+    "mappers": [],
+    "queries": [],
+    "sql": [],
+    "alembic_revision": {},
+}
 
 
 def register_mapper(
@@ -56,3 +61,24 @@ def register_sql(
         return func
 
     return register_sql_inner
+
+
+def register_alembic_branch(
+    branch_label: str,
+    options: List[Dict[str, Union[str, bool]]],
+    help: str,
+    default: bool,
+):
+    if branch_label in REGISTRIES["alembic_revision"].keys():
+        raise ValueError(
+            (
+                f"alembic branch {branch_label} could not be registered: "
+                f" there is already a revision with the same name."
+            )
+        )
+
+    REGISTRIES["alembic_revision"][branch_label] = {
+        "options": options,
+        "help": help,
+        "default": default,
+    }

@@ -1,7 +1,8 @@
-from rich import traceback
-from rich.console import Console
+from typing import Any, List, Optional, Union
 
 import click
+from rich import traceback
+from rich.console import Console
 
 
 class CustomClickCommand(click.Command):
@@ -11,10 +12,10 @@ class CustomClickCommand(click.Command):
         try:
             return super().invoke(ctx)
         except Exception as exc:
-            handle_exception(ctx.obj["console"], ctx.info_name, exc)
+            handle_exception(ctx.obj["console"], ctx.info_name)
 
 
-def handle_exception(console, info_name, exception):
+def handle_exception(console: Console, info_name: str):
     traceback.install()
     console.print_exception()
     console.log(

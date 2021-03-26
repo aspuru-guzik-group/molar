@@ -1,25 +1,10 @@
 import click
-import pkg_resources
 from alembic import command
-from alembic.config import Config
+from rich.prompt import Confirm
 
-from ...config import ClientConfig
-from ..click import CustomClickCommand
-
-GLOBAL_VERSION_PATH = pkg_resources.resource_filename(
-    *"mdb:migrations/versions".split(":")
-)
-
-
-def get_alembic_config(cfg: ClientConfig):
-    alembic_config = Config()
-    version_locations = GLOBAL_VERSION_PATH
-    if cfg.user_dir:
-        version_locations = version_locations + " " + str(cfg.user_dir / "migrations")
-    alembic_config.set_main_option("version_locations", version_locations)
-    alembic_config.set_main_option("script_location", "mdb:migrations")
-    alembic_config.set_main_option("sqlalchemy.url", cfg.sql_url)
-    return alembic_config
+from .. import alembic_utils
+from ..alembic_utils import GLOBAL_VERSION_PATH, get_alembic_config
+from ..cli_utils import CustomClickCommand
 
 
 @click.group(help="Alembic wrapper")
@@ -79,6 +64,32 @@ def history(ctx, revision_range, verbose, indicate_current):
 
 
 @alembic.command(cls=CustomClickCommand)
+@click.argument("revisions", nargs=-1, type=str)
+@click.option("-m", "--message", type=str)
+@click.option("--branch-label", type=str, default=None)
+@click.option("--revision-id", type=str, default=None)
+@click.pass_context
+def merge(ctx, revisions, message, branch_label, revision_id):
+    if not verify_user_dir(ctx):
+        return
+
+    version_path = (
+        GLOBAL_VERSION_PATH
+        if ctx.obj["client_config"].user_dir is None
+        else ctx.obj["client_config"].user_dir / "migrations"
+    )
+
+    alembic_utils.merge(
+        ctx.obj["alembic_config"],
+        revisions,
+        message,
+        branch_label,
+        version_path,
+        revision_id,
+    )
+
+
+@alembic.command(cls=CustomClickCommand)
 @click.option("-m", "--message", type=str)
 @click.option("-a", "--autogenerate", is_flag=True)
 @click.option("--sql", is_flag=True)
@@ -99,22 +110,8 @@ def revision(
     sql=False,
     depends_on=None,
 ):
-    console = ctx.obj["console"]
-    if getattr(ctx.obj["client_config"], "user_dir", None) is None:
-        console.log(
-            (
-                "[bold red]No user-dir has been specified![/bold red]\n"
-                "This means the migration will be directly added to the repository.\n"
-                "This is usually alright if you are developping mdb, "
-                "otherwise you should consider setting a user-directory.\n"
-            )
-        )
-        while True:
-            out = console.input("Are you sure you want to proceed? (y/N)")
-            if out == "" or out.lower() == "n":
-                return
-            elif out.lower() == "y":
-                break
+    if not verify_user_dir(ctx):
+        return
 
     version_path = (
         GLOBAL_VERSION_PATH
@@ -133,6 +130,21 @@ def revision(
         revision_id,
         depends_on,
     )
+
+
+def verify_user_dir(ctx):
+    console = ctx.obj["console"]
+    if getattr(ctx.obj["client_config"], "user_dir", None) is None:
+        console.log(
+            (
+                "[bold red]No user-dir has been specified![/bold red]\n"
+                "This means the migration will be directly added to the repository.\n"
+                "This is usually alright if you are developping mdb, "
+                "otherwise you should consider setting a user-directory.\n"
+            )
+        )
+        return Confirm.ask("Are you sure you want to proceed?")
+    return True
 
 
 @alembic.command(cls=CustomClickCommand)

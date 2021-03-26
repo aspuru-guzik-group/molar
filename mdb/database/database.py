@@ -7,10 +7,6 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 Base = automap_base()
 
 
-def dump(query):
-    return dict([(k, v) for k, v in vars(query).items() if not k.startswith("_")])
-
-
 def init_database(uri):
     class Models:
         pass

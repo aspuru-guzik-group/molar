@@ -1,11 +1,11 @@
 from pathlib import Path
 
-from rich.console import Console
-
 import click
+from rich.console import Console
 
 from ..config import ClientConfig
 from .commands.cmd_alembic import alembic
+from .commands.cmd_install import install
 
 
 @click.group()
@@ -27,6 +27,7 @@ def cli(ctx, username, password, hostname, database_name, user_dir=None):
             )
         )
         exit(1)
+
     config = ClientConfig(
         username=username,
         password=password,
@@ -38,3 +39,4 @@ def cli(ctx, username, password, hostname, database_name, user_dir=None):
 
 
 cli.add_command(alembic)
+cli.add_command(install)
