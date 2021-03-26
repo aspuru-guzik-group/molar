@@ -27,7 +27,7 @@ def cli(ctx, username, password, hostname, database_name, user_dir=None):
             )
         )
         exit(1)
-
+    
     config = ClientConfig(
         username=username,
         password=password,

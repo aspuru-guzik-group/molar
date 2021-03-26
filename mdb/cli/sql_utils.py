@@ -9,3 +9,4 @@ def create_connection(user, password, hostname, database):
 
 def create_user(connection, user, password):
     connection.execute(f"create role {user} with login password '{password}'")
+
