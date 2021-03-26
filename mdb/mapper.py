@@ -28,15 +28,22 @@ class SchemaMapper:
             return f_event
         return event
 
-    def add_molecule(self, smiles, molecule_type_id, reactant_id=[],
+    def add_molecule(self, smiles, molecule_type_id, reactant_id=[], metadata={},
                      pubchem_autofill=True):
         data = {'smiles': smiles,
-                'molecule_type_id': molecule_type_id}
+                'molecule_type_id': molecule_type_id,
+                'metadata':metadata}
 
         if pubchem_autofill is True:
             pubchem_data = utils.pubchem_lookup(smiles)
             if pubchem_data is not None:
                 data.update(pubchem_data)
+        
+        if isinstance(metadata, string):
+            data.update({'metadata':metadata})
+        # If metadata is dict and is empty  
+        elif isinstance(metadata, dict) and not (not metadata):
+            data.update({'metadata': json.dumps(metadata)})
 
         event = self.dao.add('molecule', data)
         f_event = self.dao.commit_or_fetch_event('molecule', data)
