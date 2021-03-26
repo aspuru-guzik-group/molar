@@ -69,7 +69,7 @@ def delete(type, uuid):
 @click.option('--admin_pass', prompt=True, hide_input=True, confirmation_prompt=True)
 @click.option('--user_pass', prompt=True, hide_input=True, confirmation_prompt=True)
 def create_db(user, password, hostname, db_name, struct_file, es_file, config, admin_pass, user_pass):
-    _admin.create_db(user, password, hostname, db_name, struct_file, es_file, admin_pass, user_pass, 'alembic.ini')
+    _admin.create_db(user, password, hostname, db_name, struct_file, es_file, admin_pass, user_pass, config)
 
 
 @admin.command(help='Remove a database')
