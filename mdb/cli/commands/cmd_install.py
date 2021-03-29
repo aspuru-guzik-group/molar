@@ -1,3 +1,5 @@
+from distutils.spawn import find_executable
+from time import sleep
 from typing import List
 
 import click
@@ -23,12 +25,60 @@ def install(ctx):
 
 
 @install.command(cls=CustomClickCommand, help="Spin up a database locally with docker")
+@click.option(
+    "--postgres-password", prompt="Chose a password for postgres user", hide_input=True
+)
 @click.pass_context
-def local(ctx):
-    # Spin up with docker
-    client = docker.from_env()
-    client.containers.run("tgaudin/postgresql-pgtap", detach=True)
-    pass
+def local(ctx, postgres_password):
+    console = ctx.obj["console"]
+    if not find_executable("docker"):
+        console.log(
+            (
+                "[red bold]Docker is not installed[/], "
+                "please install it from https://docker.com"
+            )
+        )
+        return
+    _verify_user_dir(ctx)
+    client = docker.DockerClient()
+
+    try:
+        container = client.containers.get("molar-pgsql")
+    except docker.errors.NotFound:
+        _start_docker_container(ctx, client, postgres_password)
+        container = client.containers.get("molar-pgsql")
+
+    if container.status != "running":
+        container.start()
+
+    with console.status("Starting database..."):
+        while (
+            not "database system is ready to accept connections"
+            in container.logs().decode()
+        ):
+            sleep(1)
+
+    new_database_name = Prompt.ask("How do you want to call this database?")
+    _create_database(
+        ctx, "localhost", "postgres", postgres_password, new_database_name, True
+    )
+
+
+def _start_docker_container(ctx, client: docker.DockerClient, postgres_password=None):
+    # TODO: prompt for postgres_password here
+    client.containers.run(
+        "tgaudin/postgresql-pgtap",
+        name="molar-pgsql",
+        environment={"POSTGRES_PASSWORD": postgres_password},
+        detach=True,
+        ports={"5432/tcp": 5432},
+        volumes={
+            "/var/lib/postgresql/data": {
+                "bind": str((ctx.obj["client_config"].user_dir / "data").resolve()),
+                "mode": "rw",
+            }
+        },
+    )
 
 
 @install.command(
@@ -45,13 +95,25 @@ def local(ctx):
 def create_database(
     ctx, hostname, postgres_username, postgres_password, new_database_name, advanced
 ):
+    _verify_user_dir(ctx)
+    _create_database(
+        ctx, hostname, postgres_username, postgres_password, new_database_name, advanced
+    )
+
+
+def _verify_user_dir(ctx):
     console = ctx.obj["console"]
     if getattr(ctx.obj["client_config"], "user_dir", None) is None:
         console.log(
             "[red bold]You must specify a user-dir for this operation![/red bold]"
         )
-        return
+        exit(1)
 
+
+def _create_database(
+    ctx, hostname, postgres_username, postgres_password, new_database_name, advanced
+):
+    console = ctx.obj["console"]
     with console.status(f"[bold green]Creating the database[/bold green]") as status:
         connection = sql_utils.create_connection(
             postgres_username, postgres_password, hostname, "postgres"

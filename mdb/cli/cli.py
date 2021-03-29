@@ -1,3 +1,5 @@
+import logging
+import os
 from pathlib import Path
 
 import click
@@ -13,9 +15,10 @@ from .commands.cmd_install import install
 @click.option("-p", "--password")
 @click.option("-h", "--hostname")
 @click.option("-d", "--database-name")
-@click.option("--user-dir", type=Path)
+@click.option("--user-dir", type=Path, default=None)
+@click.option("--log-level", type=str, default="INFO")
 @click.pass_context
-def cli(ctx, username, password, hostname, database_name, user_dir=None):
+def cli(ctx, username, password, hostname, database_name, user_dir, log_level):
     ctx.ensure_object(dict)
 
     ctx.obj["console"] = Console()
@@ -23,17 +26,20 @@ def cli(ctx, username, password, hostname, database_name, user_dir=None):
         ctx.obj["console"].log(
             (
                 f"The specified user_dir does not exists {user_dir}!\n"
-                "Please specify a valid user_dir."
+                f"Creating {user_dir}."
             )
         )
-        exit(1)
-    
+        os.mkdir(user_dir)
+
+    logging.basicConfig(level=log_level)
+
     config = ClientConfig(
         username=username,
         password=password,
         hostname=hostname,
         database=database_name,
         user_dir=user_dir,
+        log_level=log_level,
     )
     ctx.obj["client_config"] = config
 
