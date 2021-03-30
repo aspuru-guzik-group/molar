@@ -1,3 +1,6 @@
+import configparser
+import random
+import string
 from distutils.spawn import find_executable
 from time import sleep
 from typing import List
@@ -58,27 +61,86 @@ def local(ctx, postgres_password):
         ):
             sleep(1)
 
-    new_database_name = Prompt.ask("How do you want to call this database?")
-    _create_database(
-        ctx, "localhost", "postgres", postgres_password, new_database_name, True
-    )
+    _install_molar(ctx, "localhost", "postgres", postgres_password, None)
 
 
-def _start_docker_container(ctx, client: docker.DockerClient, postgres_password=None):
-    # TODO: prompt for postgres_password here
-    client.containers.run(
-        "tgaudin/postgresql-pgtap",
-        name="molar-pgsql",
-        environment={"POSTGRES_PASSWORD": postgres_password},
-        detach=True,
-        ports={"5432/tcp": 5432},
-        volumes={
-            "/var/lib/postgresql/data": {
-                "bind": str((ctx.obj["client_config"].user_dir / "data").resolve()),
-                "mode": "rw",
-            }
-        },
-    )
+def _generate_password(password_length=16):
+    characters_choice = string.ascii_letters + string.digits
+    return "".join(random.sample(characters_choice, password_length))
+
+
+def _install_molar(
+    ctx,
+    hostname=None,
+    postgres_username="postgres",
+    postgres_password=None,
+    new_database_name=None,
+):
+    console = ctx.obj["console"]
+    if hostname is None:
+        hostname = Prompt.ask(
+            "What is the hostname of the postgres server to install Molar :tooth: on?"
+        )
+    if postgres_password is None:
+        postgres_password = Prompt.ask("Postgres password?", password=True)
+    if new_database_name is None:
+        new_database_name = Prompt.ask("Name of the new database?")
+
+    admin_username = f"{new_database_name}_admin"
+    admin_password = _generate_password()
+    user_username = new_database_name
+    user_password = _generate_password()
+    user_dir = ctx.obj["client_config"].user_dir
+
+    with console.status("Installing Molar :tooth:..."):
+        console.log("Creating database")
+        _create_database(
+            ctx,
+            hostname,
+            postgres_username,
+            postgres_password,
+            new_database_name,
+            False,
+        )
+        console.log("Creating admin user")
+        connection = sql_utils.create_connection(
+            postgres_username, postgres_password, hostname, new_database_name
+        )
+        sql_utils.create_user(connection, admin_username, admin_password)
+        sql_utils.transfer_ownership(connection, new_database_name, admin_username)
+        console.log("Creating normal user")
+        sql_utils.create_user(connection, user_username, user_password)
+        sql_utils.grant_access_right(connection, user_username)
+        console.log("Writing config files")
+        _write_default_config_file(
+            user_dir / "molar_admin.conf",
+            hostname,
+            new_database_name,
+            admin_username,
+            admin_password,
+        )
+        _write_default_config_file(
+            user_dir / "molar_user.conf",
+            hostname,
+            new_database_name,
+            user_username,
+            user_password,
+        )
+        console.log("Molar :tooth: is insalled!")
+
+
+def _write_default_config_file(path, hostname, database, username, password):
+    config = configparser.ConfigParser()
+    config[f"{hostname}/{database}"] = {
+        "hostname": hostname,
+        "database": database,
+        "username": username,
+        "password": password,
+        "return_pandas_dataframe": True,
+        "log_level": "INFO",
+    }
+    with open(path, "w") as f:
+        config.write(f)
 
 
 @install.command(
@@ -101,6 +163,24 @@ def create_database(
     )
 
 
+def _start_docker_container(ctx, client: docker.DockerClient, postgres_password=None):
+    if postgres_password is None:
+        Prompt.ask("Enter a password for postgres user:", password=True)
+    client.containers.run(
+        "tgaudin/postgresql-pgtap",
+        name="molar-pgsql",
+        environment={"POSTGRES_PASSWORD": postgres_password},
+        detach=True,
+        ports={"5432/tcp": 5432},
+        volumes={
+            "/var/lib/postgresql/data": {
+                "bind": str((ctx.obj["client_config"].user_dir / "data").resolve()),
+                "mode": "rw",
+            }
+        },
+    )
+
+
 def _verify_user_dir(ctx):
     console = ctx.obj["console"]
     if getattr(ctx.obj["client_config"], "user_dir", None) is None:
@@ -113,18 +193,16 @@ def _verify_user_dir(ctx):
 def _create_database(
     ctx, hostname, postgres_username, postgres_password, new_database_name, advanced
 ):
-    console = ctx.obj["console"]
-    with console.status(f"[bold green]Creating the database[/bold green]") as status:
-        connection = sql_utils.create_connection(
-            postgres_username, postgres_password, hostname, "postgres"
-        )
-        connection.execution_options(isolation_level="AUTOCOMMIT").execute(
-            f"create database {new_database_name}"
-        )
-        connection.close()
-        connection = sql_utils.create_connection(
-            postgres_username, postgres_password, hostname, new_database_name
-        )
+    connection = sql_utils.create_connection(
+        postgres_username, postgres_password, hostname, "postgres"
+    )
+    connection.execution_options(isolation_level="AUTOCOMMIT").execute(
+        f"create database {new_database_name}"
+    )
+    connection.close()
+    connection = sql_utils.create_connection(
+        postgres_username, postgres_password, hostname, new_database_name
+    )
 
     version_path = ctx.obj["client_config"].user_dir / "migrations"
     revisions = choose_structure(ctx.obj["console"], advanced)
@@ -144,7 +222,7 @@ def _create_database(
         branch_labels="install",
     )
     command.upgrade(alembic_config, "install@head")
-    console.log("Molar :tooth: is installed!")
+    connection.close()
 
 
 def choose_structure(console: Console, interactive: bool) -> List[str]:
@@ -180,33 +258,3 @@ def choose_structure(console: Console, interactive: bool) -> List[str]:
                 continue
             branches.append(option["branch_label"] + "@head")
     return branches
-
-
-# def install_molar_on_postgresql(
-#     console,
-#     alembic_conf,
-#     user,
-#     password,
-#     hostname,
-#     new_database_name,
-#     admin_username,
-#     admin_password,
-#     basic_username,
-#     basic_password,
-#     ro_username,
-#     ro_password,
-# ):
-#     with console.status("[bold green]Installing Molar...") as status:
-#         connection = sql_utils.create_connection(user, password, hostname, "postgres")
-#         connection.execute_options(isolation_level="AUTOCOMMIT").execute(
-#             f"create database {new_database_name}"
-#         )
-#         connection.close()
-#         console.log("Database created")
-#         command.upgrade(alembic_conf, "head")
-#         console.log("Database structure installed")
-#         sql_utils.create_user(connection, admin_username, admin_password)
-#         sql_utils.create_user(connection, basic_username, basic_password)
-#         sql_utils.transfer_ownership(admin)
-#         sql_utils.grant_access_right(user)
-#         console.log("Admin and basic user created")
