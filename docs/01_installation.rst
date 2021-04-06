@@ -5,10 +5,7 @@ Installation
 Installing the python client
 ----------------------------
 
-Linux, OS X, *BSD
-^^^^^^^^^^^^^^^^^
-
-If you have git installed on your computer you can just git clone.
+You can check out the latest version from gitlab and install it through the following command line:
 
 .. code-block:: bash
 
@@ -17,16 +14,12 @@ If you have git installed on your computer you can just git clone.
 
 Alternatively you can download the code on `gitlab <https://gitlab.com/tgaudin/goldmine/>`_ directly.
 
-Windows
-^^^^^^^
 
-TODO!
+Installing the backend
+----------------------
 
+You will need a running `PostgreSQL <https://www.postgresql.org>`_ server to install the database. You can choose to run a database locally, or choose a cloud provider that proposes managed database (`IBM Cloud <https://www.ibm.com/cloud/databases-for-postgresql>`_, `DigitalOcean <https://www.digitalocean.com/products/managed-databases/>`_, `Azure <https://azure.microsoft.com/en-us/services/postgresql/>`_, `ElephantSQL <https://www.elephantsql.com/>`_ to name a few).
 
-Installing the backend locally
-------------------------------
-
-Even though running the database locally is not necessary, it may be useful for developpment purpose.
 
 Using `docker-compose <https://docs.docker.com/compose/>`_ is a convenient way to run postgresql locally:
 
@@ -49,6 +42,10 @@ Using `docker-compose <https://docs.docker.com/compose/>`_ is a convenient way t
         -c alembic.ini \
         --admin_pass '' \
         --user_pass ''
+If the username and database name were not configured as above then the line ``sqlalchemy.url=`` in the ``alembic.ini`` file  must be changed accordingly.
 
-The command creates a database named ``mdb``. More info about the command line tool can be found in the :ref:`command_line_interface` section.
+This command creates a database named ``mdb``. More info about the command line tool can be found in the :ref:`command_line_interface` section.
+
+.. note:: To test your install, try accessing the db with ``psql -U <user> -h <host> -d <db_name>``. Then maybe try running ``select * from public.lab;``.
+
 
