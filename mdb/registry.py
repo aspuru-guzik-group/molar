@@ -15,7 +15,7 @@ def register_mapper(
     requirements_bonus: int = 0,
 ):
     def register_mapper_inner(func):
-        REGISTRIES["mapper"].append(
+        REGISTRIES["mappers"].append(
             {
                 "name": name,
                 "table": table,
@@ -30,12 +30,16 @@ def register_mapper(
 
 
 def register_query(
-    name: str, requirements: Optional[List[Dict[str, str]]], requirements_bonus: int = 0
+    name: str,
+    table: str,
+    requirements: Optional[List[Dict[str, str]]],
+    requirements_bonus: int = 0,
 ):
     def register_query_inner(func):
-        REGISTRIES["query"].append(
+        REGISTRIES["queries"].append(
             {
                 "name": name,
+                "table": table,
                 "func": func,
                 "requirements": requirements,
                 "requirement_bonus": requirements_bonus,
@@ -47,13 +51,17 @@ def register_query(
 
 
 def register_sql(
-    name: str, requirements: Optional[List[Dict[str, str]]], requirements_bonus: int = 0
+    name: str,
+    table: str,
+    requirements: Optional[List[Dict[str, str]]],
+    requirements_bonus: int = 0,
 ):
     def register_sql_inner(func):
         REGISTRIES["sql"].append(
             {
                 "name": name,
                 "func": func,
+                "table": table,
                 "requirements": requirements,
                 "requirements_bonus": requirements_bonus,
             }
@@ -61,6 +69,23 @@ def register_sql(
         return func
 
     return register_sql_inner
+
+
+def compute_requirement_score(
+    database_structure: Dict[str, List[str]],
+    requirements: Optional[List[Dict[str, str]]],
+    requirements_bonus: int,
+) -> int:
+    score = requirements_bonus
+
+    if requirements is None:
+        return score
+
+    for req in requirements:
+        if req["name"] in database_structure[req["type"]]:
+            score += 1
+
+    return score
 
 
 def register_alembic_branch(

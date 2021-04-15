@@ -1,6 +1,7 @@
+import configparser
 import json
 import logging
-from typing import Optional
+from typing import Any, Callable, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -11,7 +12,8 @@ from tqdm import tqdm
 
 from . import database as db
 from .config import ClientConfig
-from .registry import REGISTRIES
+from .mappers import *
+from .registry import REGISTRIES, compute_requirement_score
 
 FORMAT = "%(message)s"
 logging.basicConfig(
@@ -37,31 +39,50 @@ class Client:
 
         self.dao = DataAccessObject(self.session, self.models)
 
-        capabilities = db.fetch_database_capabilities(self.session)
+        self.database_specs = db.fetch_database_specs(self.session)
 
-        for mapper in REGISTRIES["mappers"]:
-            setattr(
-                self,
-                mapper["name"],
-                self.mapper_decorator(mapper["func"], mapper["table"]),
-            )
+        self.set_registry_functions(REGISTRIES["mappers"], self.mapper_decorator)
+        self.set_registry_functions(REGISTRIES["queries"], self.query_decorator)
+        self.set_registry_functions(REGISTRIES["sql"], self.sql_query_decorator)
 
-        for query in REGISTRIES["queries"]:
-            setattr(
-                self, query["name"], self.query_decorator(query["func"], query["table"])
+    def set_registry_functions(self, registry: List[Dict], decorator: Callable) -> None:
+        items_to_use = {}
+        for item in registry:
+            requirements_score = compute_requirement_score(
+                self.database_specs, item["requirements"], item["requirements_bonus"]
             )
+            item["score"] = requirements_score
+            if item["name"] not in items_to_use.keys():
+                items_to_use[item["name"]] = item
+                continue
 
-        for sql_query in REGISTRIES["sql"]:
-            setattr(
-                self,
-                sql_query["name"],
-                self.sql_query_decorator(sql_query["func"]),
-            )
+            if requirements_score > items_to_use[item["name"]]["score"]:
+                items_to_use[item["name"]] = item
+
+        for name, item in items_to_use.items():
+            if getattr(self, name, None) is not None:
+                raise ValueError(
+                    f"{name} is already used! Please use another name for this function"
+                )
+            setattr(self, name, decorator(item["func"], item["table"]))
+
+    @staticmethod
+    def from_config_file(config_file: str, section_name: str = None) -> "Client":
+        config_parser = configparser.ConfigParser()
+        config_parser.read(config_file)
+        if section_name is None:
+            section_name = config_parser.sections()[0]
+
+        assert (
+            section_name in config_parser
+        ), f"Section {section_name} could not be found in the config file {config_file}"
+        config = ClientConfig.from_dict(config_parser[section_name])
+        return Client(config)
 
     def __delete__(self):
         self.session.close()
 
-    def mapper_decorator(self, func, table):
+    def mapper_decorator(self, func: Callable, table: str) -> Callable:
         def inner(*args, **kwargs):
             data = func(*args, **kwargs)
             event = self.dao.add(table, data)
@@ -79,11 +100,15 @@ class Client:
 
         return inner
 
-    def query_decorator(self, func, table):
+    def query_decorator(
+        self, func: Callable, table: str, return_pandas_dataframe=None
+    ) -> Callable:
         def inner(*args, **kwargs):
+            if return_pandas_dataframe is None:
+                return_pandas_dataframe = self.cfg.return_pandas_dataframe
             query = func(*args, **kwargs)
             data = self.dao.get(table, **query)
-            if self.cfg.return_pandas_dataframe:
+            if return_pandas_dataframe:
                 records = [d.__dict__ for d in data]
                 df = pd.DataFrame.from_records(records)
                 return df.replace({np.nan: None})
@@ -91,7 +116,7 @@ class Client:
 
         return inner
 
-    def sql_query_decorator(self, func):
+    def sql_query_decorator(self, func: Callable, table: str) -> Callable:
         def inner(*args, **kwargs):
             sql = text(func(*args, **kwargs))
             data = self.session.execute(sql).fetchall()
@@ -99,6 +124,20 @@ class Client:
             return data
 
         return inner
+
+    def get(
+        self,
+        table: str,
+        filters: Optional[List] = None,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+        order_by: Optional[Any] = None,
+    ):
+        if table not in self.database_specs["table"]:
+            raise ValueError(
+                f"Table {table} does not exisits in the database {self.cfg.database}!"
+            )
+        return self.dao.get(table, filters, limit, offset, order_by)
 
 
 class DataAccessObject:

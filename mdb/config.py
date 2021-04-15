@@ -1,6 +1,6 @@
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Optional
+from typing import Any, Dict, Optional
 
 
 @dataclass
@@ -24,3 +24,10 @@ class ClientConfig:
             self.port,
             self.database,
         )
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+    @staticmethod
+    def from_dict(params: Dict[str, Any]) -> "ClientConfig":
+        return ClientConfig(**params)

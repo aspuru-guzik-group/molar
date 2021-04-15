@@ -1,8 +1,8 @@
-from ..registry import register_mapper
 from .. import utils
+from ..registry import register_mapper
 
 
-@register_mapper("add_molecule", tables=["molecule"])
+@register_mapper("add_molecule", table="molecule")
 def add_molecule(smiles, metadata={}, pubchem_autofill=True):
     data = {"smiles": smiles, "metadata": metadata}
     if pubchem_autofill:
@@ -12,7 +12,11 @@ def add_molecule(smiles, metadata={}, pubchem_autofill=True):
     return data
 
 
-@register_mapper("add_molecule", tables=["molecule", "molecule_type"])
+@register_mapper(
+    "add_molecule",
+    table="molecule",
+    requirements=[{"type": "table", "name": "molecule_type"}],
+)
 def add_molecule_with_type(
     smiles, molecule_type_id, metadata={}, pubchem_autofill=True
 ):

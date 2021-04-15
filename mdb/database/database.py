@@ -1,6 +1,6 @@
 import warnings
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import scoped_session, sessionmaker
 
@@ -26,7 +26,26 @@ def init_database(uri):
     return Session, engine, models
 
 
-def fetch_database_capabilities(session):
-    import ipdb
+def fetch_database_specs(session):
+    tables = session.execute(
+        text(
+            "select table_name from information_schema.tables where table_schema='public';"
+        )
+    )
+    functions = session.execute(
+        text(
+            (
+                "select "
+                "   n.nspname || '.' || p.proname as function "
+                "from pg_proc p "
+                "left join pg_namespace n on p.pronamespace = n.oid "
+                "where n.nspname not in ('pg_catalog', 'information_schema');"
+            )
+        )
+    )
 
-    ipdb.set_trace()
+    structure = {
+        "table": [res[0] for res in tables],
+        "function": [res[0] for res in functions],
+    }
+    return structure
