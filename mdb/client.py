@@ -106,7 +106,7 @@ class Client:
         def inner(*args, **kwargs):
             if return_pandas_dataframe is None:
                 return_pandas_dataframe = self.cfg.return_pandas_dataframe
-            query = func(*args, **kwargs)
+            query = func(self.models, *args, **kwargs)
             data = self.dao.get(table, **query)
             if return_pandas_dataframe:
                 records = [d.__dict__ for d in data]
