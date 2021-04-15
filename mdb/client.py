@@ -41,11 +41,23 @@ class Client:
 
         self.database_specs = db.fetch_database_specs(self.session)
 
-        self.set_registry_functions(REGISTRIES["mappers"], self.mapper_decorator)
-        self.set_registry_functions(REGISTRIES["queries"], self.query_decorator)
-        self.set_registry_functions(REGISTRIES["sql"], self.sql_query_decorator)
+        self.registered_mappers = {}
+        self.registered_queries = {}
+        self.registered_sql = {}
 
-    def set_registry_functions(self, registry: List[Dict], decorator: Callable) -> None:
+        self.set_registry_functions(
+            REGISTRIES["mappers"], self.mapper_decorator, self.registered_mappers
+        )
+        self.set_registry_functions(
+            REGISTRIES["queries"], self.query_decorator, self.registered_queries
+        )
+        self.set_registry_functions(
+            REGISTRIES["sql"], self.sql_query_decorator, self.registered_sql
+        )
+
+    def set_registry_functions(
+        self, registry: List[Dict], decorator: Callable, internal_registry: Dict
+    ) -> None:
         items_to_use = {}
         for item in registry:
             requirements_score = compute_requirement_score(
@@ -64,7 +76,9 @@ class Client:
                 raise ValueError(
                     f"{name} is already used! Please use another name for this function"
                 )
+
             setattr(self, name, decorator(item["func"], item["table"]))
+            internal_registry[name] = item["func"]
 
     @staticmethod
     def from_config_file(config_file: str, section_name: str = None) -> "Client":

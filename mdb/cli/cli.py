@@ -1,20 +1,23 @@
 import logging
 import os
+import pathlib
 from pathlib import Path
 
 import click
 from rich.console import Console
 
 from ..config import ClientConfig
+from .commands.cmd_add import add
 from .commands.cmd_alembic import alembic
+from .commands.cmd_get import get
 from .commands.cmd_install import install
 
 
 @click.group()
-@click.option("-u", "--username")
-@click.option("-p", "--password")
-@click.option("-h", "--hostname")
-@click.option("-d", "--database-name")
+@click.option("-u", "--username", default=None)
+@click.option("-p", "--password", default=None)
+@click.option("-h", "--hostname", default=None)
+@click.option("-d", "--database-name", default=None)
 @click.option("--user-dir", type=Path, default=None)
 @click.option("--log-level", type=str, default="INFO")
 @click.pass_context
@@ -44,5 +47,7 @@ def cli(ctx, username, password, hostname, database_name, user_dir, log_level):
     ctx.obj["client_config"] = config
 
 
+cli.add_command(add)
 cli.add_command(alembic)
+cli.add_command(get)
 cli.add_command(install)
