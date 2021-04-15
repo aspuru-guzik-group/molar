@@ -39,7 +39,7 @@ class SchemaMapper:
             if pubchem_data is not None:
                 data.update(pubchem_data)
         
-        if isinstance(metadata, string):
+        if isinstance(metadata, str):
             data.update({'metadata':metadata})
         # If metadata is dict and is empty  
         elif isinstance(metadata, dict) and not (not metadata):
