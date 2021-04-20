@@ -1,18 +1,17 @@
 """data-table
 
 Revision ID: f875464bb81d
-Revises: c59a26437bf4
+Revises: fb3f43ec8aaa
 Create Date: 2021-03-24 17:56:06.695881
 
 """
-from alembic import op
 import sqlalchemy as sa
-
+from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = 'f875464bb81d'
-down_revision = 'c59a26437bf4'
-branch_labels = ('data-table',)
+revision = "f875464bb81d"
+down_revision = "fb3f43ec8aaa"
+branch_labels = ("data-table",)
 depends_on = None
 
 

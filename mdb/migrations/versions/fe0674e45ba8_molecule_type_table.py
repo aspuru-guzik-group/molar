@@ -1,7 +1,7 @@
 """molecule_type table
 
 Revision ID: fe0674e45ba8
-Revises: c59a26437bf4
+Revises: fb3f43ec8aaa
 Create Date: 2021-03-24 17:21:45.544702
 
 """
@@ -11,7 +11,7 @@ from sqlalchemy.dialects import postgresql as pgsql
 
 # revision identifiers, used by Alembic.
 revision = "fe0674e45ba8"
-down_revision = "c59a26437bf4"
+down_revision = "fb3f43ec8aaa"
 branch_labels = ("molecule-type",)
 depends_on = "8b50e623178d"
 
