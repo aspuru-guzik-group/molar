@@ -5,16 +5,16 @@ from fastapi import APIRouter, Body, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
-from mdb.backend import crud, models, schemas
-from mdb.api import deps
-from mdb.backend.core import security
-from mdb.backend.core.config import settings
-from mdb.backend.core.security import get_password_hash
-from mdb.backend.utils import (
+from .... import crud, models, schemas
+from ....core import security
+from ....core.config import settings
+from ....core.security import get_password_hash
+from ....utils import (
     generate_password_reset_token,
     send_reset_password_email,
     verify_password_reset_token,
 )
+from ... import deps
 
 router = APIRouter()
 
@@ -43,7 +43,7 @@ def login_access_token(
 
 
 @router.post("/login/test-token", response_model=schemas.User)
-def test_token(current_user: models.User = Depends(deps.get_current_user)) -> Any:
+def test_token(current_user: models.user = Depends(deps.get_current_user)) -> Any:
     """
     Test access token
     """

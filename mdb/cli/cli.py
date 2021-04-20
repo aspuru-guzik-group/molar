@@ -1,120 +1,53 @@
-import click
-import coloredlogs
+import logging
+import os
+import pathlib
+from pathlib import Path
 
-from . import admin as _admin
+import click
+from rich.console import Console
+
+from ..config import ClientConfig
+from .commands.cmd_add import add
+from .commands.cmd_alembic import alembic
+from .commands.cmd_get import get
+from .commands.cmd_install import install
+
 
 @click.group()
-def cli():
-    pass
+@click.option("-u", "--username", default=None)
+@click.option("-p", "--password", default=None)
+@click.option("-h", "--hostname", default=None)
+@click.option("-d", "--database-name", default=None)
+@click.option("--user-dir", type=Path, default=None)
+@click.option("--log-level", type=str, default="INFO")
+@click.pass_context
+def cli(ctx, username, password, hostname, database_name, user_dir, log_level):
+    ctx.ensure_object(dict)
+
+    ctx.obj["console"] = Console()
+    if user_dir is not None and not user_dir.exists():
+        ctx.obj["console"].log(
+            (
+                f"The specified user_dir does not exists {user_dir}!\n"
+                f"Creating {user_dir}."
+            )
+        )
+        os.mkdir(user_dir)
+
+    logging.basicConfig(level=log_level)
+
+    config = ClientConfig(
+        username=username,
+        password=password,
+        hostname=hostname,
+        database=database_name,
+        user_dir=user_dir,
+        log_level=log_level,
+    )
+    ctx.obj["client_config"] = config
 
 
-@cli.group(help='Admin operations on the database')
-def admin():
-    pass    
-    
-
-
-@cli.command()
-def get():
-    # Options -> no_filter, csv (output a csv)
-    # Choose table       <-+ 
-    # Add another table? --+ (show options)
-    # Add filter                       <------------------+
-    #   Filter on table -> choose table if more than one  |
-    #   Choose field                                      |
-    #   Choose operator                                   |
-    #   Choose value                                      |
-    # Add another filter ---------------------------------+
-    # Return results
-
-    pass
-
-
-@cli.command()
-def add():
-    # Choose type -> add new
-    # Fill data                          
-    # Fill relationships
-    #   -> relationship does not exists -> add new
-    #   -> relationship exists -> get if not too big, get with filter otherwise
-    pass
-
-
-@cli.command()
-def update(type, uuid):
-    # give uuid and type, edit fields
-    # fetch data, print data
-    # choose column to edit <-+
-    # edit   -----------------+
-    # show and confirm
-    # update
-    pass
-
-
-@cli.command()
-def delete(type, uuid):
-    # give uuid and type, delete field
-    # fetch, show, confirm, delete
-    pass
-
-
-@admin.command(help='Create a database')
-@click.option('-u', '--user', prompt=True)
-@click.option('-p', '--password', prompt=True, hide_input=True)
-@click.option('-h', '--hostname', prompt=True)
-@click.option('-d', '--db_name', prompt=True)
-@click.option('-s', '--struct_file', prompt=True)
-@click.option('-e', '--es_file', prompt=True)
-@click.option('-c', '--config', help="Alembic configuration file")
-@click.option('--admin_pass', prompt=True, hide_input=True, confirmation_prompt=True)
-@click.option('--user_pass', prompt=True, hide_input=True, confirmation_prompt=True)
-def create_db(user, password, hostname, db_name, struct_file, es_file, config, admin_pass, user_pass):
-    _admin.create_db(user, password, hostname, db_name, struct_file, es_file, admin_pass, user_pass, config)
-
-
-@admin.command(help='Remove a database')
-@click.option('-u', '--user', prompt=True)
-@click.option('-p', '--password', prompt=True, hide_input=True)
-@click.option('-h', '--hostname', prompt=True)
-@click.option('-d', '--db_name', prompt=True)
-@click.confirmation_option(prompt='Are you sure you want to drop the db?')
-def drop_db(user, password, hostname, db_name):
-    _admin.drop_db(user, password, hostname, db_name)
-
-
-@admin.command(help='Backup a database (save the alembic version)')
-@click.option('-u', '--user', prompt=True)
-@click.option('-p', '--password', prompt=True, hide_input=True)
-@click.option('-h', '--hostname', prompt=True)
-@click.option('-d', '--db_name', prompt=True)
-@click.option('-c', '--compression')
-@click.option('-o', '--output_file', type=click.File('wb'), prompt=True)
-def backup_db(user, password, hostname, db_name, compression, output_file):
-    _admin.backup_db(user, password, hostname, db_name, output_file, compression)
-
-
-@admin.command(help='Empty a database')
-@click.option('-u', '--user', prompt=True)
-@click.option('-p', '--password', prompt=True, hide_input=True)
-@click.option('-h', '--hostname', prompt=True)
-@click.option('-d', '--db_name', prompt=True)
-@click.confirmation_option(prompt="Are you sure you want to empty the db?")
-def empty_db(user, password, hostname, db_name):
-    _admin.empty_db(user, password, hostname, db_name)
-
-
-@admin.command(help='Restore a database with a dump file')
-@click.option('-u', '--user', prompt=True)
-@click.option('-p', '--password', prompt=True, hide_input=True)
-@click.option('-h', '--hostname', prompt=True)
-@click.option('-d', '--db_name', prompt=True)
-@click.option('-f', '--dump_file', type=click.File('r'))
-@click.confirmation_option(prompt="Are you sure you want to do that?")
-def restore_db(user, password, hostname, db_name, dump_file):
-    _admin.restore_db(user, password, hostname, db_name, 'alembic.ini', dump_file)
-
-
-
-if __name__ == '__main__':
-    coloredlogs.install('INFO')
-    cli()
+cli.add_command(add)
+cli.add_command(alembic)
+cli.add_command(get)
+cli.add_command(install)
