@@ -6,10 +6,10 @@ from jose import jwt
 from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
-from mdb.backend import crud, models, schemas
-from mdb.backend.core import security
-from mdb.backend.core.config import settings
-from mdb.backend.db.session import SessionLocal
+from .. import crud, models, schemas
+from ..core import security
+from ..core.config import settings
+from ..db.session import SessionLocal
 
 reusable_oauth2 = OAuth2PasswordBearer(
     tokenUrl=f"{settings.API_V1_STR}/login/access-token"
