@@ -1,11 +1,10 @@
-rom typing import Any, Dict, Optional, Union
-
-from sqlalchemy.orm import Session
+from typing import Any, Dict, Optional, Union
 
 from mdb.backend.core.security import get_password_hash, verify_password
 from mdb.backend.crud.base import CRUDBase
 from mdb.backend.models.user import User
 from mdb.backend.schemas.user import UserCreate, UserUpdate
+from sqlalchemy.orm import Session
 
 
 class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
