@@ -27,6 +27,10 @@ def install(ctx):
     pass
 
 
+# TODO: global install of config file?
+# TODO: installing without asking anything
+
+
 @install.command(cls=CustomClickCommand, help="Spin up a database locally with docker")
 @click.option(
     "--postgres-password", prompt="Chose a password for postgres user", hide_input=True
