@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from app.core.config import settings
+from mdb.backend.core.config import settings
 from mdb.backend.db.base_class import Base
 import warnings
 

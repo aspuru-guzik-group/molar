@@ -24,7 +24,7 @@ class Settings(BaseSettings):
             return v
         raise ValueError(v)
 
-    PROJECT_NAME: str
+    PROJECT_NAME: str='Molar :tooth:'
     SENTRY_DSN: Optional[HttpUrl] = None
 
     @validator("SENTRY_DSN", pre=True)
@@ -35,7 +35,7 @@ class Settings(BaseSettings):
 
     POSTGRES_SERVER: str
     POSTGRES_USER: str
-    POSTGRES_PASSWORD: str
+    POSTGRES_PASSWORD:
     POSTGRES_DB: str
     SQLALCHEMY_DATABASE_URI: Optional[PostgresDsn] = None
 
@@ -80,7 +80,7 @@ class Settings(BaseSettings):
     EMAIL_TEST_USER: EmailStr = "test@example.com"  # type: ignore
     FIRST_SUPERUSER: EmailStr
     FIRST_SUPERUSER_PASSWORD: str
-    USERS_OPEN_REGISTRATION: bool = False
+    USERS_OPEN_REGISTRATION: bool
 
     class Config:
         case_sensitive = True
