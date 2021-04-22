@@ -1,7 +1,7 @@
 """user-table
 
 Revision ID: fb3f43ec8aaa
-Revises: c59a26437bf4
+Revises:
 Create Date: 2021-04-20 11:45:31.260835
 
 """
@@ -10,7 +10,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "fb3f43ec8aaa"
-down_revision = "c59a26437bf4"
+down_revision = None
 branch_labels = ("user-table",)
 depends_on = None
 

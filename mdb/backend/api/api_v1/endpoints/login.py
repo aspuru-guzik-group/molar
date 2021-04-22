@@ -5,11 +5,11 @@ from fastapi import APIRouter, Body, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
-
-from .... import crud, models, schemas
+from .... import database, models, schemas
 from ....core import security
 from ....core.config import settings
 from ....core.security import get_password_hash
+from ....crud import CRUDInterface
 from ....utils import (
     generate_password_reset_token,
     send_reset_password_email,
@@ -22,13 +22,17 @@ router = APIRouter()
 
 @router.post("/login/access-token", response_model=schemas.Token)
 def login_access_token(
-    db: Session = Depends(deps.get_db), form_data: OAuth2PasswordRequestForm = Depends()
+    db: Session = Depends(deps.get_db),
+    crud: CRUDInterface = Depends(deps.get_crud),
+    form_data: OAuth2PasswordRequestForm = Depends(),
 ) -> Any:
     """
     OAuth2 compatible token login, get an access token for future requests
     """
     import ipdb
     ipdb.set_trace()
+    if not hasattr(crud, "user"):
+        raise HTTPException(status_code=400, detail="Invalid database")
     user = crud.user.authenticate(
         db, email=form_data.username, password=form_data.password
     )
@@ -39,14 +43,14 @@ def login_access_token(
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     return {
         "access_token": security.create_access_token(
-            user.id, expires_delta=access_token_expires
+            user.user_id, expires_delta=access_token_expires
         ),
         "token_type": "bearer",
     }
 
 
 @router.post("/login/test-token", response_model=schemas.User)
-def test_token(current_user = Depends(deps.get_current_user)) -> Any:
+def test_token(current_user=Depends(deps.get_current_user)) -> Any:
     """
     Test access token
     """
@@ -54,7 +58,11 @@ def test_token(current_user = Depends(deps.get_current_user)) -> Any:
 
 
 @router.post("/password-recovery/{email}", response_model=schemas.Msg)
-def recover_password(email: str, db: Session = Depends(deps.get_db)) -> Any:
+def recover_password(
+    email: str,
+    crud: CRUDInterface = Depends(deps.get_crud),
+    db: Session = Depends(deps.get_db),
+) -> Any:
     """
     Password Recovery
     """
@@ -76,6 +84,7 @@ def recover_password(email: str, db: Session = Depends(deps.get_db)) -> Any:
 def reset_password(
     token: str = Body(...),
     new_password: str = Body(...),
+    crud: CRUDInterface = Depends(deps.get_crud),
     db: Session = Depends(deps.get_db),
 ) -> Any:
     """

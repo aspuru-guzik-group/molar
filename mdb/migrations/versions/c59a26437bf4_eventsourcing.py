@@ -12,7 +12,7 @@ from alembic import op
 # revision identifiers, used by Alembic.
 revision = "c59a26437bf4"
 down_revision = None
-branch_labels = None
+branch_labels = ("eventsourcing",)
 depends_on = None
 
 
