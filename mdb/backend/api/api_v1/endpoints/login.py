@@ -5,6 +5,7 @@ from fastapi import APIRouter, Body, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
+
 from .... import crud, models, schemas
 from ....core import security
 from ....core.config import settings
@@ -26,6 +27,8 @@ def login_access_token(
     """
     OAuth2 compatible token login, get an access token for future requests
     """
+    import ipdb
+    ipdb.set_trace()
     user = crud.user.authenticate(
         db, email=form_data.username, password=form_data.password
     )
