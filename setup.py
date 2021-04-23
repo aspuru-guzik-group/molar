@@ -5,6 +5,7 @@ requirements = [
     "SQLAlchemy>=1.3.12",
     "fastapi>=0.63.0",
     "docker>=4.4.4",
+    "passlib>=1.7.4",
     "rich>=9.13.0",
     "numpy>=1.16.5",
     "pandas>=0.24.2",
