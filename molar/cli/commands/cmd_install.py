@@ -113,7 +113,7 @@ def remote(
     superuser_password,
 ):
     console = ctx.obj["console"]
-    _install_molar(hostname, postgres_username, postgres_password)
+    _install_molar(ctx, hostname, postgres_username, postgres_password)
 
     console.log("Creating the first user!")
     if superuser_email is None:
