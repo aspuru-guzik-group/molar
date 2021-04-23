@@ -1,6 +1,5 @@
 stages:
-  - test
-  - doc
+  - test-backend
 
 services:
   - tgaudin/postgresql-pgtap:latest
@@ -8,31 +7,29 @@ services:
 variables:
     POSTGRES_HOST_AUTH_METHOD: trust
 
-test-client:
-    stage: test
+test-backend:
+    stage: test-backend
     when: always
     image: continuumio/miniconda3:latest
     variables:
         DB_HOST: "tgaudin-postgresql-pgtap"
-        DB_USER: "postgres"
-        PGPASSWORD: ""
-        DB_NAME: "mdb"
+        POSTGRES_USER: "postgres"
+        PGPASSWORD: "tooth"
     before_script:
-      - conda create -n mdb python=3.6
-      - source activate mdb
+      - conda create -n molar python=3.7
+      - source activate molar
       - apt-get update
       - apt-get upgrade -y
       - apt-get install -y postgresql-client libxrender1
-      - ./pgsql/setup.sh
       - pip install coverage pytest alembic
       - python setup.py install
-      - alembic -c tests/alembic.ini.test upgrade head
+      - molarcli --user-dir db install remote --hostname tgaudin-postgresql-pgtab --postgres-username postgres --postgres-password tooth --superuser-email test@molar.tooth --superuser-password tooth
     script:
       - python setup.py test
       - coverage run --source mdb -m py.test
       - coverage report
 
-test-backend:
+test-database:
     stage: test
     when: always
     image: 'alpine:3.7'
