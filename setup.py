@@ -1,10 +1,10 @@
 from setuptools import setup, find_packages
 
 requirements = [
-    "Click==7.0",
-    "SQLAlchemy==1.3.12",
-    "certifi==2019.11.28",
-    "coloredlogs==10.0",
+    "Click>=7.0",
+    "SQLAlchemy>=1.3.12",
+    "fastapi>=0.63.0",
+    "rich>=9.13.0",
     "numpy>=1.16.5",
     "pandas>=0.24.2",
     "python-dateutil==2.8.1",
