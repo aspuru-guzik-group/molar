@@ -124,7 +124,7 @@ def remote(
     _add_user(
         email=superuser_email,
         password=superuser_password,
-        hostname="localhost",
+        hostname=hostname,
         postgres_username="postgres",
         postgres_password=postgres_password,
         postgres_database="molar_main",
