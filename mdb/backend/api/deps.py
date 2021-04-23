@@ -35,6 +35,7 @@ def get_current_user(
     db: Session = Depends(get_db),
     crud: CRUDInterface = Depends(get_crud),
     token: str = Depends(reusable_oauth2),
+    ):
     try:
         payload = jwt.decode(
             token, settings.SECRET_KEY, algorithms=[security.ALGORITHM]

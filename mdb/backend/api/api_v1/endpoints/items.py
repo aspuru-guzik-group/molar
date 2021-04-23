@@ -12,6 +12,7 @@ router = APIRouter()
 @router.get("/", response_model=List[schemas.Item])
 def read_items(
     db: Session = Depends(deps.get_db),
+    crud: CRUDInterface = Depends(deps.get_crud),
     skip: int = 0,
     limit: int = 100,
     current_user: models.User = Depends(deps.get_current_active_user),

@@ -29,8 +29,8 @@ def login_access_token(
     """
     OAuth2 compatible token login, get an access token for future requests
     """
-    import ipdb
-    ipdb.set_trace()
+    #import ipdb
+    #ipdb.set_trace()
     if not hasattr(crud, "user"):
         raise HTTPException(status_code=400, detail="Invalid database")
     user = crud.user.authenticate(
