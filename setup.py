@@ -11,6 +11,7 @@ requirements = [
     "pandas>=0.24.2",
     "python-dateutil==2.8.1",
     "pytz==2019.3",
+    "psycopg2-binary==2.8.6",
     "six==1.14.0",
     "tqdm==4.41.1",
     "pubchempy==1.0.4",
