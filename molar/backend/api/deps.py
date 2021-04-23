@@ -19,14 +19,20 @@ reusable_oauth2 = OAuth2PasswordBearer(
 def get_db(database_name: Optional[str] = "main") -> Generator:
     try:
         base = getattr(database, database_name)
-        session = base.session_local()
-        yield session
+        if base is None:
+            yield None
+        else:
+            session = base.session_local()
+            yield session
     finally:
-        session.close()
+        if base is not None:
+            session.close()
 
 
 def get_crud(database_name: Optional[str] = "main"):
     base = getattr(database, database_name)
+    if base is None:
+        return None
     return base.crud
 
 
