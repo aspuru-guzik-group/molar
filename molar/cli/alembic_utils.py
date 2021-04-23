@@ -5,7 +5,7 @@ from alembic.script import ScriptDirectory
 
 from ..config import ClientConfig
 
-GLOBAL_VERSION_PATH = pkg_resources.resource_filename("mdb", "migrations/versions")
+GLOBAL_VERSION_PATH = pkg_resources.resource_filename("molar", "migrations/versions")
 
 
 def get_alembic_config(cfg: ClientConfig):
@@ -14,7 +14,7 @@ def get_alembic_config(cfg: ClientConfig):
     if cfg.user_dir:
         version_locations = version_locations + " " + str(cfg.user_dir / "migrations")
     alembic_config.set_main_option("version_locations", version_locations)
-    alembic_config.set_main_option("script_location", "mdb:migrations")
+    alembic_config.set_main_option("script_location", "molar:migrations")
     alembic_config.set_main_option("sqlalchemy.url", cfg.sql_url)
     return alembic_config
 

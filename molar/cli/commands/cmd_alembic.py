@@ -139,7 +139,7 @@ def verify_user_dir(ctx):
             (
                 "[bold red]No user-dir has been specified![/bold red]\n"
                 "This means the migration will be directly added to the repository.\n"
-                "This is usually alright if you are developping mdb, "
+                "This is usually alright if you are developping Molar, "
                 "otherwise you should consider setting a user-directory.\n"
             )
         )

@@ -4,7 +4,7 @@ import string
 from datetime import datetime
 from distutils.spawn import find_executable
 from time import sleep
-from typing import List
+from typing import List, Optional
 
 import click
 import docker
@@ -35,12 +35,20 @@ def install(ctx):
 # TODO: installing without asking anything
 
 
-@install.command(cls=CustomClickCommand, help="Spin up a database locally with docker")
+@install.command(cls=CustomClickCommand, help="Spin up Molar locally with docker")
 @click.option(
     "--postgres-password", prompt="Chose a password for postgres user", hide_input=True
 )
+@click.option(
+    "--container-name",
+    type=str,
+    default="molar-pgsql",
+    help="Name of the docker container (default: molar-pgsql)",
+)
+@click.option("--superuser-email", type=str, default=None)
+@click.option("--superuser-password", type=str, default=None)
 @click.pass_context
-def local(ctx, postgres_password):
+def local(ctx, postgres_password, container_name, superuser_email, superuser_password):
     console = ctx.obj["console"]
     if not find_executable("docker"):
         console.log(
@@ -54,10 +62,10 @@ def local(ctx, postgres_password):
     client = docker.DockerClient()
 
     try:
-        container = client.containers.get("molar-pgsql")
+        container = client.containers.get(container_name)
     except docker.errors.NotFound:
-        _start_docker_container(ctx, client, postgres_password)
-        container = client.containers.get("molar-pgsql")
+        _start_docker_container(ctx, client, container_name, postgres_password)
+        container = client.containers.get(container_name)
 
     if container.status != "running":
         container.start()
@@ -72,12 +80,14 @@ def local(ctx, postgres_password):
     _install_molar(ctx, "localhost", "postgres", postgres_password)
 
     console.log("Creating the first user!")
-    email = Prompt.ask("Email")
-    password = Prompt.ask("Password", password=True)
+    if superuser_email is None:
+        superuser_email = Prompt.ask("Email")
+    if superuser_password is None:
+        superuser_password = Prompt.ask("Password", password=True)
 
     _add_user(
-        email=email,
-        password=password,
+        email=superuser_email,
+        password=superuser_password,
         hostname="localhost",
         postgres_username="postgres",
         postgres_password=postgres_password,
@@ -162,12 +172,14 @@ def create_database(
     )
 
 
-def _start_docker_container(ctx, client: docker.DockerClient, postgres_password=None):
+def _start_docker_container(
+    ctx, client: docker.DockerClient, container_name: str, postgres_password=None
+):
     if postgres_password is None:
         Prompt.ask("Enter a password for postgres user:", password=True)
     client.containers.run(
         "tgaudin/postgresql-pgtap",
-        name="molar-pgsql",
+        name=container_name,
         environment={"POSTGRES_PASSWORD": postgres_password},
         detach=True,
         ports={"5432/tcp": 5432},

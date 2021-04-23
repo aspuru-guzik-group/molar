@@ -1,7 +1,7 @@
 from typing import Any
 
 from fastapi import APIRouter, Depends
-from mdb.backend.utils import send_test_email
+from molar.backend.utils import send_test_email
 from pydantic.networks import EmailStr
 
 from .... import models, schemas

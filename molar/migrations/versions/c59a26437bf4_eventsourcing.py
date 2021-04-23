@@ -17,7 +17,7 @@ depends_on = None
 
 
 def upgrade():
-    filename = pkg_resources.resource_filename("mdb", "sql/event_sourcing.sql")
+    filename = pkg_resources.resource_filename("molar", "sql/event_sourcing.sql")
     sql = open(filename, "r").read()
     op.execute(sql)
 

@@ -1,9 +1,9 @@
 from typing import Any, Dict, Optional, Union
 
-from mdb.backend.schemas.user import UserCreate, UserUpdate
 from sqlalchemy.orm import Session
 
 from ..core.security import get_password_hash, verify_password
+from ..schemas.user import UserCreate, UserUpdate
 from .base import CRUDBase, ModelType
 
 

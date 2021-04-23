@@ -7,7 +7,7 @@ import emails
 from emails.template import JinjaTemplate
 from jose import jwt
 
-from mdb.backend.core.config import settings
+from .core.config import settings
 
 
 def send_email(
@@ -93,7 +93,9 @@ def generate_password_reset_token(email: str) -> str:
     expires = now + delta
     exp = expires.timestamp()
     encoded_jwt = jwt.encode(
-        {"exp": exp, "nbf": now, "sub": email}, settings.SECRET_KEY, algorithm="HS256",
+        {"exp": exp, "nbf": now, "sub": email},
+        settings.SECRET_KEY,
+        algorithm="HS256",
     )
     return encoded_jwt
 

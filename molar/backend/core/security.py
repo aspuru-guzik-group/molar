@@ -2,8 +2,9 @@ from datetime import datetime, timedelta
 from typing import Any, Optional, Union
 
 from jose import jwt
-from mdb.backend.core.config import settings
 from passlib.context import CryptContext
+
+from .config import settings
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 

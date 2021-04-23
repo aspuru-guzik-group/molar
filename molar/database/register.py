@@ -12,3 +12,11 @@ register_alembic_branch(
     help="Table for SMILES and extra data at the molecular level.",
     default=True,
 )
+
+
+register_alembic_branch(
+    branch_label="molar-main",
+    options=[],
+    help="Structure of the main molar database",
+    default=False,
+)
