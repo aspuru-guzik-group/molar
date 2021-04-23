@@ -97,6 +97,42 @@ def local(ctx, postgres_password, container_name, superuser_email, superuser_pas
     console.log("Molar :tooth: is insalled!")
 
 
+@install.command(cls=CustomClickCommand, help="Set up remote postgres database")
+@click.option("--hostname", type=str)
+@click.option("--postgres-username")
+@click.option("--postgres-password")
+@click.option("--superuser-email", type=str, default=None)
+@click.option("--superuser-password", type=str, default=None)
+@click.pass_context
+def remote(
+    ctx,
+    hostname,
+    postgres_username,
+    postgres_password,
+    superuser_email,
+    superuser_password,
+):
+    console = ctx.obj["console"]
+    _install_molar(hostname, postgres_username, postgres_password)
+
+    console.log("Creating the first user!")
+    if superuser_email is None:
+        superuser_email = Prompt.ask("Email")
+    if superuser_password is None:
+        superuser_password = Prompt.ask("Password", password=True)
+
+    _add_user(
+        email=superuser_email,
+        password=superuser_password,
+        hostname="localhost",
+        postgres_username="postgres",
+        postgres_password=postgres_password,
+        postgres_database="molar_main",
+    )
+
+    console.log(f"Molar :tooth: is insalled on {hostname}!")
+
+
 def _install_molar(
     ctx,
     hostname=None,
