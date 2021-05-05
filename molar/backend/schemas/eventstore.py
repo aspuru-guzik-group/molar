@@ -21,6 +21,7 @@ class EventStoreBase(BaseModel):
 class EventStoreCreate(EventStoreBase):
     pass
 
-
+class EventStoreDelete(EventStoreBase):
+    pass
 class EventStoreUpdate(EventStoreCreate):
     uuid: UUID

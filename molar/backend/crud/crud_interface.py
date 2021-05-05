@@ -1,4 +1,4 @@
-from .crud_eventstore import CRUDEventStore
+from .crud_eventStore import CRUDEventStore
 from .crud_molar_database import CRUDMolarDatabase
 from .crud_user import CRUDUser
 
