@@ -37,6 +37,7 @@ def install(ctx):
 
 
 @install.command(cls=CustomClickCommand, help="Spin up Molar locally with docker")
+
 @click.option(
     "--postgres-password", prompt="Chose a password for postgres user", hide_input=True
 )
@@ -46,10 +47,11 @@ def install(ctx):
     default="molar-pgsql",
     help="Name of the docker container (default: molar-pgsql)",
 )
+@click.option("--superuser-name", type=str, default=None)
 @click.option("--superuser-email", type=str, default=None)
 @click.option("--superuser-password", type=str, default=None)
 @click.pass_context
-def local(ctx, postgres_password, container_name, superuser_email, superuser_password):
+def local(ctx, postgres_password, container_name,superuser_name, superuser_email, superuser_password):
     console = ctx.obj["console"]
     if not find_executable("docker"):
         console.log(
@@ -81,12 +83,15 @@ def local(ctx, postgres_password, container_name, superuser_email, superuser_pas
     _install_molar(ctx, "localhost", "postgres", postgres_password)
 
     console.log("Creating the first user!")
+    if superuser_name is None:
+        superuser_email = Prompt.ask("Name")
     if superuser_email is None:
         superuser_email = Prompt.ask("Email")
     if superuser_password is None:
         superuser_password = Prompt.ask("Password", password=True)
 
     _add_user(
+        user_name=superuser_name,
         email=superuser_email,
         password=superuser_password,
         hostname="localhost",
@@ -161,6 +166,7 @@ def _install_molar(
 
 
 def _add_user(
+    user_name=None,
     email=None,
     password=None,
     hostname=None,
@@ -174,13 +180,15 @@ def _add_user(
     connection.execute(
         (
             'insert into "user".user '
-            '       ("email", '
+            '       ("full_name", '
+            '        "email", '
             '        "hashed_password", '
             '        "is_superuser", '
             '        "is_active" , '
             '        "created_on") '
             "values "
-            f"('{email}', "
+            f"('{user_name}',"
+            f"'{email}', "
             f" '{pwd_context.hash(password)}',"
             " true,"
             " true,"

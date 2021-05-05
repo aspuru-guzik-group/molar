@@ -22,6 +22,7 @@ from .commands.cmd_install import install
 @click.option("--log-level", type=str, default="INFO")
 @click.pass_context
 def cli(ctx, username, password, hostname, database_name, user_dir, log_level):
+    print('HERE')    
     ctx.ensure_object(dict)
 
     ctx.obj["console"] = Console()

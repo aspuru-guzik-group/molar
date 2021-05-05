@@ -1,7 +1,7 @@
 from typing import Any, Dict, Optional, Union
 
 from sqlalchemy.orm import Session
-
+from datetime import datetime
 from ..core.security import get_password_hash, verify_password
 from ..schemas.user import UserCreate, UserUpdate
 from .base import CRUDBase, ModelType
@@ -12,11 +12,15 @@ class CRUDUser(CRUDBase[ModelType, UserCreate, UserUpdate]):
         return db.query(self.model).filter(self.model.email == email).first()
 
     def create(self, db: Session, *, obj_in: UserCreate) -> ModelType:
+        import ipdb
+        ipdb.set_trace()
+
         db_obj = self.model(
             email=obj_in.email,
             hashed_password=get_password_hash(obj_in.password),
             full_name=obj_in.full_name,
             is_superuser=obj_in.is_superuser,
+            created_on = datetime.utcnow(),
         )
         db.add(db_obj)
         db.commit()

@@ -1,5 +1,7 @@
 alembic.ini
+data/
 db.conf
+_mdb/
 # Created by https://www.gitignore.io/api/vim,emacs,linux,macos,python,pycharm,windows,sublimetext
 # Edit at https://www.gitignore.io/?templates=vim,emacs,linux,macos,python,pycharm,windows,sublimetext
 

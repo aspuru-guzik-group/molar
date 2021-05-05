@@ -36,6 +36,7 @@ def upgrade():
         sa.Column("is_active", sa.Boolean, default=True),
         sa.Column("is_superuser", sa.Boolean, default=False),
         sa.Column("created_on", sa.DateTime, nullable=False),
+        sa.Column("full_name", sa.Text, nullable=False),
         schema="user",
     )
 
