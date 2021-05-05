@@ -7,6 +7,7 @@ Create Date: 2021-04-21 15:04:52.892851
 """
 import sqlalchemy as sa
 from alembic import op
+from sqlalchemy.dialects import postgresql as pgsql
 
 # revision identifiers, used by Alembic.
 revision = "8c865f1ab81a"
@@ -32,8 +33,9 @@ def upgrade():
         sa.Column("id", sa.Integer),
         sa.Column("database_name", sa.Text, unique=True, index=True, nullable=False),
         sa.Column("superuser_email", sa.Text, nullable=False),
+        sa.Column("superuser_password", sa.Text, nullable=False),
+        sa.Column("alembic_revisions", pgsql.ARRAY(sa.Text), nullable=False),
         sa.Column("is_approved", sa.Boolean, default=False),
-        sa.Column("is_created", sa.Boolean, default=False),
     )
 
     op.execute(

@@ -1,3 +1,4 @@
+from .crud_molar_database import CRUDMolarDatabase
 from .crud_user import CRUDUser
 
 
@@ -6,4 +7,7 @@ class CRUDInterface:
         user = getattr(models, "user", None)
         if user is not None:
             self.user = CRUDUser(user)
+        molar_database = getattr(models, "molar_database", None)
+        if molar_database is not None:
+            self.molar_database = CRUDMolarDatabase(molar_database)
         # eventstore = getattr(models, "eventstore", None)
