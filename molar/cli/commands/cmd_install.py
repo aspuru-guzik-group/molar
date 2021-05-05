@@ -9,12 +9,13 @@ from typing import List, Optional
 import click
 import docker
 from alembic import command
+from molar import sql_utils
+from molar.registry import REGISTRIES
 from passlib.context import CryptContext
 from rich.console import Console
 from rich.prompt import Confirm, Prompt
 
-from ...registry import REGISTRIES
-from .. import alembic_utils, sql_utils
+from .. import alembic_utils
 
 # from .. import sql_utils
 from ..cli_utils import CustomClickCommand
@@ -216,14 +217,23 @@ def _start_docker_container(
     client.containers.run(
         "tgaudin/postgresql-pgtap",
         name=container_name,
-        environment={"POSTGRES_PASSWORD": postgres_password},
+        environment={
+            "ALEMBIC_USER_DIR": "/var/lib/molar/migrations",
+            "POSTGRES_PASSWORD": postgres_password,
+        },
         detach=True,
         ports={"5432/tcp": 5432},
         volumes={
             "/var/lib/postgresql/data": {
                 "bind": str((ctx.obj["client_config"].user_dir / "data").resolve()),
                 "mode": "rw",
-            }
+            },
+            "/var/lib/molar/migrations": {
+                "bind": str(
+                    (ctx.obj["client_config"].user_dir / "migrations").resolve()
+                ),
+                "mode": "rw",
+            },
         },
     )
 
