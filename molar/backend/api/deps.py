@@ -16,6 +16,59 @@ reusable_oauth2 = OAuth2PasswordBearer(
 )
 
 
+def get_main_db() -> Generator:
+    try:
+        session = database.main.session_local()
+        yield session
+    finally:
+        session.close()
+
+
+def get_main_crud():
+    return database.main.crud
+
+
+def get_main_current_user(
+    db: Session = Depends(get_main_db),
+    crud: CRUDInterface = Depends(get_main_crud),
+    token: str = Depends(reusable_oauth2),
+):
+    try:
+        payload = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=[security.ALGORITHM]
+        )
+        token_data = schemas.TokenPayload(**payload)
+    except (jwt.JWTError, ValidationError):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Could not validate credentials",
+        )
+    user = crud.user.get(db, user_id=token_data.sub)
+    if not user:
+        raise HTTPException(status_code=404, detail="user not found")
+    return user
+
+
+def get_main_current_active_user(
+    crud: CRUDInterface = Depends(get_main_crud),
+    current_main_user=Depends(get_main_current_user),
+):
+    if not crud.user.is_active(current_main_user):
+        raise HTTPException(status_code=400, detail="Inactive user")
+    return current_main_user
+
+
+def get_main_current_active_superuser(
+    crud: CRUDInterface = Depends(get_main_crud),
+    current_user=Depends(get_main_current_active_user),
+):
+    if not crud.user.is_superuser(current_user):
+        raise HTTPException(
+            status_code=400, detail="The user does not have enough privileges"
+        )
+    return current_user
+
+
 def get_db(database_name: Optional[str] = "main") -> Generator:
     try:
         base = getattr(database, database_name)
