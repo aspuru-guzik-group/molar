@@ -73,7 +73,7 @@ def recover_password(
         )
     password_reset_token = generate_password_reset_token(email=email)
     send_reset_password_email(
-        email_to=user.email, email=email, token=password_reset_token
+        email_to=user.email, name=user.full_name, token=password_reset_token
     )
     return {"msg": "Password recovery email sent"}
 
