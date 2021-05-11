@@ -81,7 +81,7 @@ def delete(
     database_name: str,
     event: schemas.EventStoreDelete,
     db: Session = Depends(deps.get_db),
-    #    current_user=Depends(deps.get_current_active_user),
+    current_user=Depends(deps.get_current_active_user),
     crud=Depends(deps.get_crud),
 ):
     if crud.eventstore is None:
