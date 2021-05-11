@@ -2,6 +2,7 @@ from datetime import datetime
 
 from alembic import command
 from pydantic import PostgresDsn
+from sqlalchemy import text
 
 from . import sql_utils
 
@@ -12,6 +13,7 @@ def install_molar_database(
     postgres_username,
     postgres_password,
     new_database_name,
+    superuser_fullname,
     superuser_email,
     superuser_hashed_password,
     revisions,
@@ -29,6 +31,7 @@ def install_molar_database(
         revisions,
     )
     add_user(
+        superuser_fullname,
         superuser_email,
         superuser_hashed_password,
         hostname,
@@ -39,6 +42,7 @@ def install_molar_database(
 
 
 def add_user(
+    fullname=None,
     email=None,
     hashed_password=None,
     hostname=None,
@@ -49,21 +53,19 @@ def add_user(
     connection = sql_utils.create_connection(
         postgres_username, postgres_password, hostname, postgres_database
     )
-    connection.execute(
+    query = text(
         (
             'insert into "user".user '
-            '       ("email", '
-            '        "hashed_password", '
-            '        "is_superuser", '
-            '        "is_active" , '
-            '        "created_on") '
+            '("full_name", "email", "hashed_password", '
+            '"is_superuser", "is_active", "created_on") '
             "values "
-            f"('{email}', "
-            f" '{hashed_password}',"
-            " true,"
-            " true,"
-            f" '{datetime.utcnow()}'::TIMESTAMP);"
+            "( :fullname, :email, :hashed_password, "
+            "true, true, now()::timestamp )"
         )
+    )
+    connection.execute(
+        query,
+        {"fullname": fullname, "email": email, "hashed_password": hashed_password},
     )
 
 

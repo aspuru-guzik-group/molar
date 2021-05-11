@@ -3,19 +3,18 @@ from typing import Any
 
 from fastapi import APIRouter, Body, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy.orm import Session
-
-from .... import database, models, schemas
-from ....core import security
-from ....core.config import settings
-from ....core.security import get_password_hash
-from ....crud import CRUDInterface
-from ....utils import (
+from molar.backend import database, models, schemas
+from molar.backend.api import deps
+from molar.backend.core import security
+from molar.backend.core.config import settings
+from molar.backend.core.security import get_password_hash
+from molar.backend.crud import CRUDInterface
+from molar.backend.utils import (
     generate_password_reset_token,
     send_reset_password_email,
     verify_password_reset_token,
 )
-from ... import deps
+from sqlalchemy.orm import Session
 
 router = APIRouter()
 

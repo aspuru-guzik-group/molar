@@ -24,6 +24,7 @@ def database_creation_request(
         crud.molar_database.create(db, obj_in=database_in)
     except sqlalchemy.exc.IntegrityError:
         HTTPException(status_code=401, detail="This database name is already taken")
+
     return {"msg": "Database request created"}
 
 
@@ -34,18 +35,6 @@ def get_database_requests(
 ):
     out = db.query(database.main.models.molar_database).all()
     return out
-
-
-@router.get("/revisions", response_model=List[schemas.Revision])
-def get_alembic_revision():
-    alembic_config = alembic_utils.get_alembic_config()
-    revisions = alembic_utils.get_revisions(alembic_config)
-    return [
-        schemas.Revision(
-            revision=r.revision, log_entry=r.log_entry, branch_labels=r.branch_labels
-        )
-        for r in revisions
-    ]
 
 
 @router.put("/approve/{database_name}", response_model=schemas.Msg)
@@ -69,6 +58,7 @@ def approve_database(
         postgres_username=settings.POSTGRES_USER,
         postgres_password=settings.POSTGRES_PASSWORD,
         new_database_name=db_obj.database_name,
+        superuser_fullname=db_obj.superuser_fullname,
         superuser_email=db_obj.superuser_email,
         superuser_hashed_password=db_obj.superuser_password,
         revisions=db_obj.alembic_revisions,
@@ -106,6 +96,7 @@ def remove_a_database(
     db_obj = crud.molar_database.get_by_database_name(db, database_name=database_name)
     if not db_obj:
         raise HTTPException(status_code=404, detail="Database not found!")
+    crud.molar_database.remove_by_database_name(db, database_name=database_name)
     background_tasks.add_task(
         install.drop_database,
         hostname=settings.POSTGRES_SERVER,

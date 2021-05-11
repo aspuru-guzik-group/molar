@@ -16,6 +16,7 @@ class CRUDMolarDatabase(CRUDBase[ModelType, DatabaseCreate, DatabaseUpdate]):
     def create(self, db: Session, obj_in: DatabaseCreate):
         db_obj = self.model(
             database_name=obj_in.database_name,
+            superuser_fullname=obj_in.superuser_fullname,
             superuser_email=obj_in.superuser_email,
             superuser_password=get_password_hash(obj_in.superuser_password),
             is_approved=False,
@@ -31,4 +32,10 @@ class CRUDMolarDatabase(CRUDBase[ModelType, DatabaseCreate, DatabaseUpdate]):
         db.add(db_obj)
         db.commit()
         db.refresh(db_obj)
+        return db_obj
+
+    def remove_by_database_name(self, db: Session, *, database_name: str):
+        db_obj = self.get_by_database_name(db, database_name=database_name)
+        db.delete(db_obj)
+        db.commit()
         return db_obj
