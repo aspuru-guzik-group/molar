@@ -1,18 +1,8 @@
-import os
-
-from fastapi.testclient import TestClient
-from molar.backend.main import app
-
-
-def test_get_alembic_revisions(client):
-    out = client.get("/api/v1/database/revisions")
-    assert out.status_code == 200
-
-
 def test_database_creation_request(client):
     out = client.post(
         "/api/v1/database/request",
         json={
+            "superuser_fullname": "Charlie Brown",
             "superuser_email": "test@firstuser.com",
             "superuser_password": "asdf",
             "database_name": "test_database_endpoints",
@@ -48,6 +38,7 @@ def test_remove_request(client, molar_main_headers):
     out = client.post(
         "/api/v1/database/request",
         json={
+            "superuser_fullname": "Test User",
             "superuser_email": "test@firstuser.com",
             "superuser_password": "asdf",
             "database_name": "test2",
