@@ -1,5 +1,6 @@
+from datetime import datetime
 from enum import Enum
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -13,15 +14,24 @@ class EventTypes(str, Enum):
 
 
 class EventStoreBase(BaseModel):
-    event: EventTypes
     type: str
+
+
+class EventStore(EventStoreBase):
+    uuid: Optional[UUID]
+    event: EventTypes
     data: Dict[str, Any]
+    timestamp: Optional[datetime]
 
 
 class EventStoreCreate(EventStoreBase):
-    pass
+    data: Dict[str, Any]
+
 
 class EventStoreDelete(EventStoreBase):
-    pass
-class EventStoreUpdate(EventStoreCreate):
     uuid: UUID
+
+
+class EventStoreUpdate(EventStoreBase):
+    uuid: UUID
+    data: Dict[str, Any]
