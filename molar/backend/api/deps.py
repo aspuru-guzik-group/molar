@@ -89,12 +89,21 @@ def get_crud(database_name: Optional[str] = "main"):
     return base.crud
 
 
+def get_models(database_name: Optional[str] = "main"):
+    base = getattr(database, database_name)
+    if base is None:
+        return None
+    return base.models
+
+
 # TODO add type annotation for return type
 def get_current_user(
     db: Session = Depends(get_db),
     crud: CRUDInterface = Depends(get_crud),
     token: str = Depends(reusable_oauth2),
-    ):
+):
+    if db is None:
+        raise HTTPException(status_code=404, detail="Database not found")
     try:
         payload = jwt.decode(
             token, settings.SECRET_KEY, algorithms=[security.ALGORITHM]

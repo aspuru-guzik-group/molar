@@ -1,0 +1,146 @@
+import pytest
+
+
+@pytest.fixture(autouse=True, scope="class")
+def insert_dummy_data(client, new_database_headers):
+    out = client.post(
+        "/api/v1/eventstore/test_database",
+        headers=new_database_headers,
+        json={
+            "type": "molecule",
+            "data": {
+                "smiles": "abc",
+                "metadata": {"test": "test", "test_filters": "abc"},
+            },
+        },
+    )
+    assert out.status_code == 200
+    out = client.post(
+        "/api/v1/eventstore/test_database",
+        headers=new_database_headers,
+        json={"type": "molecule_type", "data": {"name": "test_type"}},
+    )
+    assert out.status_code == 200
+    event = out.json()
+
+    out = client.post(
+        "/api/v1/eventstore/test_database",
+        headers=new_database_headers,
+        json={
+            "type": "molecule",
+            "data": {"smiles": "def", "molecule_type_id": event["uuid"]},
+        },
+    )
+    assert out.status_code == 200
+
+
+class TestQuery:
+    def test_simple_query(self, client, new_database_headers):
+        # Database doesn't exist
+        out = client.get("/api/v1/query/idontexist", headers=new_database_headers)
+        assert out.status_code == 404
+        # No types provided
+        out = client.get("/api/v1/query/test_database", headers=new_database_headers)
+        assert out.status_code == 422
+
+        # Normal query
+        out = client.get(
+            "/api/v1/query/test_database",
+            headers=new_database_headers,
+            json={"types": "molecule"},
+        )
+        assert out.status_code == 200
+        data = out.json()
+        assert len(data) == 2
+
+        out = client.get(
+            "/api/v1/query/test_database",
+            headers=new_database_headers,
+            json={"types": ["molecule.smiles", "molecule_type.name"]},
+        )
+        assert out.status_code == 200
+        data = out.json()
+        assert len(data) == 2
+        assert "molecule.smiles" in data[0].keys()
+        assert "molecule_type.name" in data[0].keys()
+
+    def test_query_with_json_field(self, client, new_database_headers):
+        out = client.get(
+            "/api/v1/query/test_database",
+            headers=new_database_headers,
+            json={"types": "molecule.metadata.test"},
+        )
+        assert out.status_code == 200
+        data = out.json()
+        assert len(data) == 2
+        assert data[0]["molecule.metadata.test"] == "test"
+        assert data[1]["molecule.metadata.test"] is None
+
+        out = client.get(
+            "/api/v1/query/test_database",
+            headers=new_database_headers,
+            json={"types": ["molecule.metadata.test", "molecule.smiles"]},
+        )
+        assert out.status_code == 200
+
+    def test_filters(self, client, new_database_headers):
+        out = client.get(
+            "/api/v1/query/test_database",
+            headers=new_database_headers,
+            json={
+                "types": "molecule",
+                "filters": {"type": "molecule.smiles", "op": "==", "value": "abc"},
+            },
+        )
+        assert out.status_code == 200
+        data = out.json()
+        assert len(data) == 1
+        assert data[0]["smiles"] == "abc"
+
+        out = client.get(
+            "/api/v1/query/test_database",
+            headers=new_database_headers,
+            json={
+                "types": "molecule",
+                "filters": {
+                    "type": "molecule.smiles",
+                    "op": "==",
+                    "value": "molecule.metadata.test_filters",
+                },
+            },
+        )
+        assert out.status_code == 200
+        data = out.json()
+        assert len(data) == 1
+
+    def test_joins(self, client, new_database_headers):
+        out = client.get(
+            "/api/v1/query/test_database",
+            headers=new_database_headers,
+            json={"types": "molecule", "joins": {"type": "molecule_type"}},
+        )
+        assert out.status_code == 200
+        data = out.json()
+        len(data) == 1
+        out = client.get(
+            "/api/v1/query/test_database",
+            headers=new_database_headers,
+            json={
+                "types": "molecule",
+                "joins": {"type": "molecule_type", "join_type": "outer"},
+            },
+        )
+        assert out.status_code == 200
+        data = out.json()
+        len(data) == 1
+        out = client.get(
+            "/api/v1/query/test_database",
+            headers=new_database_headers,
+            json={
+                "types": "molecule",
+                "joins": {"type": "molecule_type", "join_type": "full"},
+            },
+        )
+        assert out.status_code == 200
+        data = out.json()
+        len(data) == 1
