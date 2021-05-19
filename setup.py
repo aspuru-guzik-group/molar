@@ -7,7 +7,7 @@ requirements = [
     "coloredlogs==10.0",
     "numpy>=1.16.5",
     "pandas>=0.24.2",
-    "paramiko==2.7.1",
+    "bcrypt>=3.2.0",
     "psycopg2-binary==2.8.4",
     "python-dateutil==2.8.1",
     "pytz==2019.3",
