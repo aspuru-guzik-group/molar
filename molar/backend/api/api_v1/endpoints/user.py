@@ -31,8 +31,7 @@ def get_users(
     :returns: List of tuples (user_id, user_email) 
     """
 
-    import ipdb
-    ipdb.set_trace()
+    
     if crud.user.is_superuser(current_user):
         users = crud.user.get_multi(
             db,

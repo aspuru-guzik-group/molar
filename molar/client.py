@@ -1,6 +1,7 @@
 import configparser
 import json
 import logging
+import os
 from typing import Any, Callable, Dict, List, Optional
 
 import numpy as np
@@ -27,6 +28,7 @@ class Client:
         cfg: ClientConfig,
         logger: Optional[logging.Logger] = None,
     ):
+
         self.cfg = cfg
         Session, engine, models = db.init_database(self.cfg.sql_url)
         self.session = Session()
@@ -37,7 +39,7 @@ class Client:
         if self.logger:
             self.logger.setLevel(cfg.log_level)
 
-        self.dao = DataAccessObject(self.session, self.models)
+        # self.dao = DataAccessObject(self.session, self.models)
 
         self.database_specs = db.fetch_database_specs(self.session)
 
@@ -92,6 +94,41 @@ class Client:
         ), f"Section {section_name} could not be found in the config file {config_file}"
         config = ClientConfig.from_dict(config_parser[section_name])
         return Client(config)
+
+    @staticmethod
+    def login(hostname: str, database: str, username: str, password: str) -> "Client":
+        if (not os.path.exists(ClientConfig.DEFAULT_DIRECTORY)):
+            os.mkdir(ClientConfig.DEFAULT_DIRECTORY)
+        
+        filepath = os.path.join(ClientConfig.DEFAULT_DIRECTORY, "database.ini")
+        config_parser = configparser.ConfigParser()
+        
+        if (not os.path.exists(filepath)):            
+            config_parser[username] = {
+                'hostname': hostname,
+                'database': database,
+                'username': username,
+                'password': password
+            }
+            with open(filepath, 'w') as configfile:
+                config_parser.write(configfile)
+        else:
+            config_parser.read(filepath)
+            if (not config_parser.has_section(username)):
+                config_parser[username] = {
+                    'hostname': hostname,
+                    'database': database,
+                    'username': username,
+                    'password': password
+                }
+            with open(filepath, 'a') as configfile:
+                config_parser.write(configfile)
+        return Client.from_config_file(config_file=filepath, section_name= username)
+        
+    def check_token():
+        pass
+        
+    
 
     def __delete__(self):
         self.session.close()

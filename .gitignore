@@ -381,3 +381,4 @@ $RECYCLE.BIN/
 *.lnk
 
 # End of https://www.gitignore.io/api/vim,emacs,linux,macos,python,pycharm,windows,sublimetext
+.vscode/settings.json
