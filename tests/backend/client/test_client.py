@@ -12,18 +12,17 @@ def test_api(client_fastapi, client_interface):
         "/api/v1/utils/test/api/"
     )
     answer = out.json()["msg"]
-    myclient = client_interface.test()
+    myclient = client_interface.test()["msg"]
     assert answer == myclient
 
 def test_dummy(client_interface):
     assert True
 
 def test_client_login(client_interface):
-    
-    token_fast_api = client_interface.cfg.token
+    headers = client_interface.headers
     # myclient = Interface_Client("test@molar.tooth", "tooth")
     #TODO no way to check for the token without changing visibility
-    assert True
+    assert len(headers.json()) == 2
 
 """
 DATABASE TESTS

@@ -3,7 +3,8 @@ import os
 import pytest
 from fastapi.testclient import TestClient
 from molar.backend.main import app
-from molar.interface_client import Interface_Client
+from molar.client_interface import Client_Interface
+from molar.client_config import Client_Config
 
 
 @pytest.fixture(scope="module")
@@ -25,12 +26,13 @@ def molar_main_headers(client):
 
 @pytest.fixture(scope="class")
 def client_interface():
-    return Interface_Client(
+    cfg = Client_Config(
         hostname="localhost", 
         database="postgres", 
         username="test@molar.tooth", 
         password="tooth", 
         fullname="Tooth Fairy",
-    )    
+    )
+    return Client_Interface(cfg)    
 
 

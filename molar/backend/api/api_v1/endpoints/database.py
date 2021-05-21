@@ -23,7 +23,7 @@ def database_creation_request(
     try:
         crud.molar_database.create(db, obj_in=database_in)
     except sqlalchemy.exc.IntegrityError:
-        HTTPException(status_code=401, detail="This database name is already taken")
+        raise HTTPException(status_code=401, detail="This database name is already taken")
 
     return {"msg": "Database request created"}
 

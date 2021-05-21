@@ -1,4 +1,5 @@
 import configparser
+from molar import config
 import os
 from typing import Any, Dict, Optional
 from .backend.core.config import settings
@@ -15,7 +16,8 @@ class Client_Config:
         hostname: str,
         database: str,
         username: str,
-        password: str,  
+        password: str,
+        fullname: Optional[str] = None,  
     ):
         #TODO ADD TOKEN FROM CLIENT_INTERFACE
         # Checking if there already exists an .ini file for this username
@@ -56,3 +58,16 @@ class Client_Config:
         self.database = database
         self.username = username
         self.password = password
+        self.fullname = fullname
+    
+    @staticmethod
+    def from_config_file(config_file: str, section_name: str = None):
+        parser = configparser.ConfigParser()
+        parser.read(config_file)
+        if not section_name:
+            section_name = parser.sections()[0]
+        
+        if not (section_name in parser):
+            raise ValueError(f"Section{section_name} could not be found in the config file.")
+        
+        return Client_Config(**parser[section_name])
