@@ -12,8 +12,8 @@ class CRUDUser(CRUDBase[ModelType, UserCreate, UserUpdate]):
         return db.query(self.model).filter(self.model.email == email).first()
 
     def create(self, db: Session, *, obj_in: UserCreate) -> ModelType:
-        import ipdb
-        ipdb.set_trace()
+        # import ipdb
+        # ipdb.set_trace()
 
         db_obj = self.model(
             email=obj_in.email,

@@ -10,7 +10,7 @@ from ... import deps
 router = APIRouter()
 
 
-@router.post("/test-email/", response_model=schemas.Msg, status_code=201)
+@router.post("/test-email", response_model=schemas.Msg, status_code=201)
 def test_email(
     email_to: EmailStr,
     current_user=Depends(deps.get_current_active_superuser),
@@ -20,3 +20,7 @@ def test_email(
     """
     send_test_email(email_to=email_to)
     return {"msg": "Test email sent"}
+
+@router.get("/test/api", response_model=schemas.Msg, status_code=200)
+def test():
+    return {"msg": "hello how are you"}

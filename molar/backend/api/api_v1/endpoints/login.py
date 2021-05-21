@@ -1,7 +1,7 @@
 from datetime import timedelta
-from typing import Any
+from typing import Any, Optional
 
-from fastapi import APIRouter, Body, Depends, HTTPException
+from fastapi import APIRouter, Body, Depends, HTTPException, Header
 from fastapi.security import OAuth2PasswordRequestForm
 from molar.backend import database, models, schemas
 from molar.backend.api import deps
@@ -43,7 +43,7 @@ def login_access_token(
         "access_token": security.create_access_token(
             user.user_id, expires_delta=access_token_expires
         ),
-        "token_type": "bearer",
+        "token_type": "Bearer"
     }
 
 
@@ -78,7 +78,7 @@ def recover_password(
     return {"msg": "Password recovery email sent"}
 
 
-@router.post("/reset-password/", response_model=schemas.Msg)
+@router.post("/reset-password", response_model=schemas.Msg)
 def reset_password(
     token: str = Body(...),
     new_password: str = Body(...),

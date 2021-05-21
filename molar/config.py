@@ -8,8 +8,9 @@ class ClientConfig:
     hostname: str
     database: str
     username: str
-    password: str
+    password: str    
     port: int = 5432
+    DEFAULT_DIRECTORY: str = "~/.local/molar"
 
     return_pandas_dataframe: bool = True
     log_level: str = "INFO"
