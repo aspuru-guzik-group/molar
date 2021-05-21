@@ -28,7 +28,7 @@ def molar_main_headers(client):
 def client_interface():
     cfg = Client_Config(
         hostname="localhost", 
-        database="postgres", 
+        database_name="molar_main", 
         username="test@molar.tooth", 
         password="tooth", 
         fullname="Tooth Fairy",

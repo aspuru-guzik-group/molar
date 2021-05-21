@@ -59,7 +59,7 @@ class Client_Interface:
     def request(
         self,
         url: str,
-        method, str,
+        method: str,
         params=None,
         json=None,
         data=None,
@@ -83,13 +83,14 @@ class Client_Interface:
         if response.status_code != 200:
             #Handle errors
             self.logger.error(out["detail"])
-            pass      
+                  
         
         if return_pandas_dataframe:
             return pd.DataFrame.from_records(out)
 
         if "msg" in out.keys():
             self.logger.info(out["msg"])
+            return out
         
         return out
 
@@ -140,15 +141,15 @@ class Client_Interface:
     def database_creation_request(self, database_name: str):
         databasemodel = {
             "database_name": database_name,
-            "superuser_fullname": "",
+            "superuser_fullname": self.cfg.fullname,
             "superuser_email": self.cfg.username,
             "superuser_password": self.cfg.password,
-            "alembic_revisions": []
+            "alembic_revisions": ["fe0318fjfew8afj"]
         }
         return self.request(
             "/database/request",
             method="POST",
-            data=databasemodel,
+            json=databasemodel,
             headers=self.headers
         )
     
@@ -167,7 +168,7 @@ class Client_Interface:
             headers=self.headers,
         )
 
-    def remove_database_requests(self, database_name: str):
+    def remove_database_request(self, database_name: str):
         return self.request(
             f"/database/request/{database_name}",
             method="DELETE",

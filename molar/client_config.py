@@ -14,7 +14,7 @@ class Client_Config:
     def __init__(
         self,
         hostname: str,
-        database: str,
+        database_name: str,
         username: str,
         password: str,
         fullname: Optional[str] = None,  
@@ -55,7 +55,7 @@ class Client_Config:
 
         # initializing the object's attributes
         self.hostname = hostname
-        self.database = database
+        self.database_name = database_name
         self.username = username
         self.password = password
         self.fullname = fullname

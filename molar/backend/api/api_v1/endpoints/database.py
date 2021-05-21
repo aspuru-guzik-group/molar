@@ -79,7 +79,7 @@ def remove_database_requests(
     if db_obj.is_approved:
         raise HTTPException(
             status_code=403,
-            detail="This database requests has been approved and therefore can not be removed",
+            detail="This database request has been approved and therefore cannot be removed",
         )
     crud.molar_database.remove(db, id=db_obj.id)
     return {"msg": "Database request removed"}
