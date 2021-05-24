@@ -7,9 +7,7 @@ import click
 from rich.console import Console
 
 from ..config import ClientConfig
-from .commands.cmd_add import add
 from .commands.cmd_alembic import alembic
-from .commands.cmd_get import get
 from .commands.cmd_install import install
 
 
@@ -22,7 +20,6 @@ from .commands.cmd_install import install
 @click.option("--log-level", type=str, default="INFO")
 @click.pass_context
 def cli(ctx, username, password, hostname, database_name, user_dir, log_level):
-    print('HERE')    
     ctx.ensure_object(dict)
 
     ctx.obj["console"] = Console()
@@ -48,7 +45,5 @@ def cli(ctx, username, password, hostname, database_name, user_dir, log_level):
     ctx.obj["client_config"] = config
 
 
-cli.add_command(add)
 cli.add_command(alembic)
-cli.add_command(get)
 cli.add_command(install)
