@@ -3,6 +3,7 @@ from setuptools import find_packages, setup
 requirements = [
     "Click>=7.0",
     "SQLAlchemy>=1.3.12",
+    "bcrypt>=3.2.0"
     "fastapi>=0.63.0",
     "docker>=4.4.4",
     "passlib>=1.7.4",
