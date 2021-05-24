@@ -74,4 +74,9 @@ def test_remove_database(client_interface):
     pandas = client_interface.get_database_requests()
     assert "myDatabase" not in pandas.values 
 
+"""
+QUERY TESTS
+"""
+
+
 
