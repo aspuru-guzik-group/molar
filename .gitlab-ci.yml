@@ -27,8 +27,9 @@ test-backend:
       - apt-get install -y postgresql-client libxrender1
       - pip install coverage pytest alembic
       - pip install -e .[backend]
+      - pip install -e .[test]
       - molarcli --user-dir db install remote --hostname tgaudin-postgresql-pgtap --postgres-username postgres --postgres-password tooth --superuser-email test@molar.tooth --superuser-password tooth
     script:
-      - python setup.py test
-      - coverage run --source mdb -m py.test
+      - pytest
+      - coverage run --source molar -m py.test
       - coverage report
