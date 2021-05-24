@@ -10,7 +10,6 @@ import click
 import docker
 from alembic import command
 from molar import sql_utils
-from molar.registry import REGISTRIES
 from passlib.context import CryptContext
 from rich.console import Console
 from rich.prompt import Confirm, Prompt
@@ -279,38 +278,3 @@ def _create_database(
     )
     command.upgrade(alembic_config, "molar-main@head")
     connection.close()
-
-
-def choose_structure(console: Console, interactive: bool) -> List[str]:
-    # TODO: improve this message
-    if (
-        not Confirm.ask("Do you want to choose the database structure?")
-        and not interactive
-    ):
-        default: List[str] = []
-        for name, details in REGISTRIES["alembic_revision"].items():
-            if not details["default"]:
-                continue
-
-            default.append(name + "@head")
-            for option in details["options"]:
-                if option["default"]:
-                    default.append(option["branch_label"] + "@head")
-        return default
-
-    branches: List[str] = []
-    for name, details in REGISTRIES["alembic_revision"].items():
-        out = Confirm.ask(f"Do you want to install {name} ({details['help']}) ?")
-        if not out:
-            continue
-
-        branches.append(name + "@head")
-        console.log(f"[bold]Options for {name}[/bold]")
-        for option in details["options"]:
-            console.log(f" - {option['branch_label']}")
-            console.log(f"{option['help']}")
-            out = Confirm.ask(f"Do you want to install this option for {name}?")
-            if not out:
-                continue
-            branches.append(option["branch_label"] + "@head")
-    return branches
