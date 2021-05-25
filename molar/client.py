@@ -1,59 +1,60 @@
-from datetime import datetime
-from uuid import UUID
-from requests import models
-
-from requests.api import head
-from molar.client_config import Client_Config
-import molar
-import requests
 import logging
-import pandas as pd
-from pydantic import BaseModel, EmailStr
+from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Union
-from rich.logging import RichHandler
+from uuid import UUID
+
+import pandas as pd
+import requests
 from fastapi import HTTPException
+from jose import jwt
+from pydantic import BaseModel, EmailStr
+from requests import models
+from requests.api import head
+from rich.logging import RichHandler
+
+import molar
+
+from .client_config import ClientConfig
+from .exceptions import MolarBackendError
 
 FORMAT = "%(message)s"
 logging.basicConfig(
     level="NOTSET", format=FORMAT, datefmt="[%X]", handlers=[RichHandler()]
 )
 
-class Client_Interface:
-    def __init__(self, cfg: Client_Config):
+
+class Client:
+    def __init__(self, cfg: ClientConfig):
         self.cfg = cfg
         self.logger = logging.getLogger("molar")
         if self.logger:
             self.logger.setLevel(self.cfg.log_level)
         self.__headers: Dict[str, str] = {}
+        self.__token: Optional[str] = None
 
-        # request = requests.post(
-        #     f'{self.cfg.SERVER_URL}/login/access-token?database=molar_main', 
-        #     data={
-        #         "username": "test@molar.tooth",
-        #         "password": "tooth",
-        #     },
-        # )
-
-        # #if the cfg doesnt have a token, its the first login so we need to create a new token
-        # if (not self.cfg.token):
-        #     #TODO check for the expiry of the token
-        #     self.cfg.token = request.json()["access_token"]
-
-        # self.header = {'Authorization': f'Bearer {self.cfg.token}'}
-
-        #TODO change schema for TOken to allow for more entries
-        # user_header = request.json()["user_header"]
-        
-        #TODO need to perform some parsing
-        #TODO compare to the current client python/molar version
+        # TODO need to perform some parsing
+        # TODO compare to the current client python/molar version
         # if not (user_header == "molar v0.3 python v2.7.3"):
         #     self.logger.debug("Current Client is out of date")
 
     @property
+    def token(self):
+        if self.__token is None:
+            token = self.authenticate()
+            self.__token = token
+
+        claims = jwt.get_unverified_claims(self.__token)
+        exp = datetime.fromtimestamp(claims["exp"])
+
+        if exp + timedelta(seconds=30) < datetime.utcnow():
+            token = self.authenticate()
+            self.__token = token
+        return self.__token
+
+    @property
     def headers(self):
         if "Authorization" not in self.__headers.keys():
-            token = self.authenticate()
-            self.__headers["Authorization"] = f"Bearer {token}"
+            self.__headers["Authorization"] = f"Bearer {self.token}"
         if "User-Agent" not in self.__headers.keys():
             self.__headers["User-Agent"] = f"Molar v{molar.__version__}"
         return self.__headers
@@ -70,45 +71,56 @@ class Client_Interface:
     ):
         if not url.startswith("/"):
             url = "/" + url
-        
-        response=requests.request(
+
+        response = requests.request(
             method,
-            f"{self.cfg.SERVER_URL}{url}",
+            f"{self.cfg.base_url}{url}",
             params=params,
             json=json,
             data=data,
             headers=headers,
         )
+        if response.status_code == 500:
+            raise MolarBackendError(status_code=500, message="Server Error")
 
         out = response.json()
 
         if response.status_code != 200:
-            #Handle errors
-            self.logger.error(out["detail"])
-                  
-        
+            raise MolarBackendError(
+                status_code=response.status_code, message=out["detail"]
+            )
+
         if return_pandas_dataframe:
             return pd.DataFrame.from_records(out)
 
-        if "msg" in out.keys():
+        if out is not None and "msg" in out.keys():
             self.logger.info(out["msg"])
             return out
-        
+
         return out
 
     """
     USER RELATED ACTIONS
     """
+
     def authenticate(self):
         response = self.request(
             f"/login/access-token?database={self.cfg.database_name}",
             method="POST",
             data={
-                "username": self.cfg.username, 
+                "username": self.cfg.username,
                 "password": self.cfg.password,
-            }
+            },
         )
         return response["access_token"]
+
+    def test_token(self):
+        return self.request(
+            "/login/test-token",
+            method="POST",
+            params={"database_name": self.cfg.database_name},
+            headers=self.headers,
+        )
 
     def test_email(self, email: EmailStr):
         return self.request(
@@ -117,50 +129,45 @@ class Client_Interface:
             params={"email_to": email},
             headers=self.headers,
         )
-    
-    @staticmethod
-    def recover_password(email: EmailStr):
-        #static method because client object cant be created without a password
-        #no header because it is a static method
-        request = requests.post(f"{Client_Config.SERVER_URL}/password-recovery/{email}")
-        return request.json()["msg"]
-    
-    @staticmethod
-    def reset_password(token: str, new_password: str):
-        #static method because client object cant be created without a password
-        #no header beaause it is a static method
-        data={
+
+    def recover_password(self, email: EmailStr):
+        # static method because client object cant be created without a password
+        # no header because it is a static method
+        return self.request(f"/password-recovery/{email}", method="POST")
+
+    def reset_password(self, token: str, new_password: str):
+        # static method because client object cant be created without a password
+        # no header beaause it is a static method
+        data = {
             "token": token,
             "new_password": new_password,
         }
-        request = requests.post(f"{Client_Config.cfg.SERVER_URL}/reset-password", data)
-        return request.json()["msg"]
-
+        return self.request("/reset-password", method="POST", data=data)
 
     """
     DATABASE RELATED ACTIONS
     """
-    def database_creation_request(self, database_name: str):
+
+    def database_creation_request(
+        self, database_name: str, alembic_revisions: List[str]
+    ):
         databasemodel = {
             "database_name": database_name,
             "superuser_fullname": self.cfg.fullname,
             "superuser_email": self.cfg.username,
             "superuser_password": self.cfg.password,
-            "alembic_revisions": ["fe0318fjfew8afj"]
+            "alembic_revisions": alembic_revisions,
         }
         return self.request(
-            "/database/request",
-            method="POST",
-            json=databasemodel,
-            headers=self.headers
+            "/database/request", method="POST", json=databasemodel, headers=self.headers
         )
-    
-    def get_database_requests(self):
+
+    def get_database_requests(self, return_pandas_dataframe=True):
         return self.request(
             "/database/requests",
             method="GET",
             headers=self.headers,
-            return_pandas_dataframe=True
+            return_pandas_dataframe=return_pandas_dataframe,
         )
 
     def approve_database(self, database_name: str):
@@ -176,17 +183,16 @@ class Client_Interface:
             method="DELETE",
             headers=self.headers,
         )
-    
+
     def remove_database(self, database_name):
         return self.request(
-            f"/database/{database_name}",
-            method="DELETE",
-            headers=self.headers
+            f"/database/{database_name}", method="DELETE", headers=self.headers
         )
 
     """
     EVENTSTORE RELATED ACTIONS
     """
+
     def view_entries(
         self,
         database_name: str,
@@ -197,8 +203,8 @@ class Client_Interface:
             return_pandas_dataframe=True,
             headers=self.headers,
         )
-    
-    #should it be possible to store data without type or vice versa
+
+    # should it be possible to store data without type or vice versa
     def create_entry(
         self,
         database_name: str,
@@ -216,7 +222,7 @@ class Client_Interface:
             headers=self.headers,
             return_pandas_dataframe=True,
         )
-    
+
     def update_entry(
         self,
         database_name: str,
@@ -236,14 +242,14 @@ class Client_Interface:
             headers=self.headers,
             return_pandas_dataframe=True,
         )
-    
+
     def delete_entry(
         self,
         database_name: str,
         uuid: UUID,
         type: str,
     ):
-        datum={
+        datum = {
             "type": type,
             "uuid": uuid,
         }
@@ -258,6 +264,7 @@ class Client_Interface:
     """
     QUERYING RELATED ACTIONS
     """
+
     def query_database(
         self,
         database_name: str,
@@ -271,16 +278,19 @@ class Client_Interface:
         filter_value: Optional[str],
         order_by: Optional[str],
     ):
-        #invalid filter
-        if (not (filter_on and filter_op and filter_value) 
-            and (filter_on or filter_op or filter_value)):
-            raise ValueError("Invalid filter values: must either have all filter values or none")
-        
-        #invalid join values
-        if (not join_on and join_type):
+        # invalid filter
+        if not (filter_on and filter_op and filter_value) and (
+            filter_on or filter_op or filter_value
+        ):
+            raise ValueError(
+                "Invalid filter values: must either have all filter values or none"
+            )
+
+        # invalid join values
+        if not join_on and join_type:
             raise ValueError("Must join on something if there is a join type specified")
 
-        json={
+        json = {
             "type": type,
             "limit": limit,
             "offset": offset,
@@ -293,7 +303,7 @@ class Client_Interface:
                 "op": filter_op,
                 "value": filter_value,
             },
-            "order_by": order_by,            
+            "order_by": order_by,
         }
 
         return self.request(
@@ -306,15 +316,18 @@ class Client_Interface:
     """
     ALEMBIC RELATED ACTIONS
     """
-    def get_alembic_revision(self):
+
+    def get_alembic_revisions(self, return_pandas_dataframe=True):
         return self.request(
             "/alembic/revisions",
             method="GET",
             headers=self.headers,
-            return_pandas_dataframe=True
+            return_pandas_dataframe=return_pandas_dataframe,
         )
-    
-    def alembic_upgrade(self, database_name: str, revision: str):
+
+    def alembic_upgrade(self, revision: str, database_name: Optional[str] = None):
+        if database_name is None:
+            database_name = self.cfg.database_name
         return self.request(
             "/alembic/upgrade",
             method="POST",
@@ -324,8 +337,10 @@ class Client_Interface:
             },
             headers=self.headers,
         )
-    
-    def alembic_downgrade(self, database_name: str, revision: str):
+
+    def alembic_downgrade(self, revision: str, database_name: Optional[str] = None):
+        if database_name is None:
+            database_name = self.cfg.database_name
         return self.request(
             "/alembic/downgrade",
             method="POST",
@@ -335,17 +350,18 @@ class Client_Interface:
             },
             headers=self.headers,
         )
-    
+
     """
     USER MANAGEMENT RELATED ACTIONS
     """
+
     def get_users(self):
         return self.request(
             "/user/get-users",
             method="GET",
             headers=self.headers,
         )
-    
+
     def add_user(
         self,
         email: EmailStr,
@@ -353,7 +369,7 @@ class Client_Interface:
         organization: str,
         is_active: Optional[bool] = True,
         is_superuser: bool = False,
-        full_name: Optional[str] = None
+        full_name: Optional[str] = None,
     ):
         user_create_model = {
             "email": email,
@@ -364,7 +380,7 @@ class Client_Interface:
             "full_name": full_name,
             "joined_on": datetime.now(),
         }
-        #check if current user is superuser is in backend
+        # check if current user is superuser is in backend
         response = self.request(
             "/user/add-users",
             method="POST",
@@ -405,14 +421,12 @@ class Client_Interface:
             method="PUT",
             data=user_update_model,
             headers=self.headers,
-            return_pandas_dataframe=True
+            return_pandas_dataframe=True,
         )
 
     """
     DEBUGGING
     """
+
     def test(self):
-        return self.request(
-            "/utils/test/api",
-            method="GET"
-        )
+        return self.request("/utils/test/api", method="GET")
