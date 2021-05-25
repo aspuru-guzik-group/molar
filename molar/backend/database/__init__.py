@@ -32,3 +32,12 @@ def __getattr__(database_name: str):
         return None
     DATABASE_REGISTRY[database_name] = db_handler
     return db_handler
+
+
+def close_database(database_name: str):
+    if database_name not in DATABASE_REGISTRY.keys():
+        return
+
+    db = DATABASE_REGISTRY[database_name]
+    db.close()
+    del DATABASE_REGISTRY[database_name]

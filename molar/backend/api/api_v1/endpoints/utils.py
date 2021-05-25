@@ -20,7 +20,3 @@ def test_email(
     """
     send_test_email(email_to=email_to)
     return {"msg": "Test email sent"}
-
-@router.get("/test/api", response_model=schemas.Msg, status_code=200)
-def test():
-    return {"msg": "hello how are you"}

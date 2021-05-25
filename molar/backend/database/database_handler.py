@@ -29,3 +29,6 @@ class DatabaseHandler:
                 self.base.prepare(self.engine, reflect=True, schema=schema)
 
         self.crud = CRUDInterface(self.models)
+
+    def close(self):
+        self.engine.dispose()
