@@ -1,0 +1,19 @@
+#!/bin/bash
+set -e
+shopt -s extglob
+source ${PG_APP_HOME}/env-defaults
+
+
+
+create_datadir() {
+  echo "Initializing datadir..."
+  mkdir -p ${PG_HOME}
+  if [[ -d ${PG_DATADIR} ]]; then
+    chmod 0600 $( find ${PG_DATADIR} -type f )
+    chmod 0700 $( find ${PG_DATADIR} -type d )
+  fi
+  chown -R ${PG_USER}:${PG_USER} ${PG_HOME}
+}
+
+
+
