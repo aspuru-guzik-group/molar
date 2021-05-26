@@ -22,7 +22,7 @@ class Settings(BaseSettings):
         raise ValueError(v)
 
     PROJECT_NAME: str = "Molar"
-    ALEMBIC_USER_DIR: Optional[Path]
+    ALEMBIC_USER_DIR: Optional[Path] = None
     POSTGRES_SERVER: str
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str

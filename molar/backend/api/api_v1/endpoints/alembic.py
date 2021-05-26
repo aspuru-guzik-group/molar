@@ -10,7 +10,7 @@ router = APIRouter()
 
 
 @router.get("/revisions", response_model=List[schemas.Revision])
-def get_alembic_revision(current_user=Depends(deps.get_current_active_superuser)):
+def get_alembic_revision():
     alembic_config = alembic_utils.get_alembic_config()
     revisions = alembic_utils.get_revisions(alembic_config)
     return [
