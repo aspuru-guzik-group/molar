@@ -41,7 +41,7 @@ def create(
 ):
     if crud.eventstore is None:
         raise HTTPException(status_code=404, detail="Eventstore not found")
-    obj_out = crud.eventstore.create(db, obj_in=event)
+    obj_out = crud.eventstore.create(db, obj_in=event, user_id=current_user.user_id)
     return schemas.EventStore(
         uuid=obj_out.uuid,
         event=obj_out.event,
@@ -62,7 +62,7 @@ def update(
     if crud.eventstore is None:
         raise HTTPException(status_code=404, detail="Eventstore not found")
     try:
-        obj_out = crud.eventstore.update(db, obj_in=event)
+        obj_out = crud.eventstore.update(db, obj_in=event, user_id=current_user.user_id)
     except sqlalchemy.exc.InternalError as e:
         raise HTTPException(
             status_code=404, detail="Event with uuid {event.uuid} not found!"
@@ -86,7 +86,7 @@ def delete(
 ):
     if crud.eventstore is None:
         raise HTTPException(status_code=404, detail="Eventstore not found")
-    obj_out = crud.eventstore.delete(db, obj_in=event)
+    obj_out = crud.eventstore.delete(db, obj_in=event, user_id=current_user.user_id)
     return schemas.EventStore(
         uuid=obj_out.uuid,
         event=obj_out.event,
