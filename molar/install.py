@@ -18,10 +18,6 @@ def install_molar_database(
     superuser_hashed_password,
     revisions,
 ):
-    if "fb3f43ec8aaa" not in revisions:
-        revisions.insert(0, "fb3f43ec8aaa")
-    if "c59a26437bf4" not in revisions:
-        revisions.insert(0, "c59a26437bf4")
     create_database(
         alembic_config,
         hostname,
@@ -98,8 +94,7 @@ def create_database(
             path=f"/{new_database_name}",
         ),
     )
-    for revision in revisions:
-        command.upgrade(alembic_config, revision)
+    command.upgrade(alembic_config, revisions)
     connection.close()
 
 

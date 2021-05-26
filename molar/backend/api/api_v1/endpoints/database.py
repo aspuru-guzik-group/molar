@@ -20,10 +20,16 @@ def database_creation_request(
     db: Session = Depends(deps.get_main_db),
     crud: CRUDInterface = Depends(deps.get_main_crud),
 ):
+    if database_in.database_name in ["molar_main", "main"]:
+        raise HTTPException(
+            status_code=401, detail="This database name is already taken"
+        )
     try:
         crud.molar_database.create(db, obj_in=database_in)
     except sqlalchemy.exc.IntegrityError:
-        HTTPException(status_code=401, detail="This database name is already taken")
+        raise HTTPException(
+            status_code=401, detail="This database name is already taken"
+        )
 
     return {"msg": "Database request created"}
 
@@ -79,7 +85,7 @@ def remove_database_requests(
     if db_obj.is_approved:
         raise HTTPException(
             status_code=403,
-            detail="This database requests has been approved and therefore can not be removed",
+            detail="This database request has been approved and therefore cannot be removed",
         )
     crud.molar_database.remove(db, id=db_obj.id)
     return {"msg": "Database request removed"}
@@ -97,6 +103,9 @@ def remove_a_database(
     if not db_obj:
         raise HTTPException(status_code=404, detail="Database not found!")
     crud.molar_database.remove_by_database_name(db, database_name=database_name)
+
+    database.close_database(database_name)
+
     background_tasks.add_task(
         install.drop_database,
         hostname=settings.POSTGRES_SERVER,

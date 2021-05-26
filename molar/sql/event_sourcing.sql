@@ -20,8 +20,13 @@ create table sourcing.eventstore (
     "data"  jsonb    default '{}'                                                      not null,
     "timestamp" timestamp without time zone default now()::timestamp without time zone not null,
     "uuid" uuid,
+    "user_id" bigint not null,
+    "alembic_version" text[] not null,
     primary key ( "id" )
 );
+
+alter table sourcing.eventstore
+  add constraint eventstore_user_id foreign key (user_id) references "user".user (user_id);
 
 
 -- on_create_query
@@ -203,11 +208,13 @@ begin
         raise invalid_parameter_value using message = 'No criterion were provided for the rollback';
     end if;
     return format('insert into sourcing.eventstore 
-                     ("event", "type", "uuid", "data", "timestamp") (
+                     ("event", "type", "uuid", "data", "timestamp", "alembic_version", "user_id") (
 		                select "event", 
                                "type", 
                                "uuid", 
                                "data", 
+                               "alembic_version",
+                               "user_id",
                                %L  as "timestamp"
 		                  from "sourcing"."eventstore"
     		             where %s
@@ -229,6 +236,8 @@ begin
     if new.timestamp is null then
         new.timestamp := now()::timestamp without time zone;
     end if;
+
+    new.alembic_version := (select array_agg(version_num) from public.alembic_version);
 
     case new.event
     when 'create' then

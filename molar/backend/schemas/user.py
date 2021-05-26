@@ -6,24 +6,28 @@ from pydantic import BaseModel, EmailStr
 
 # Shared properties
 class UserBase(BaseModel):
-    email: Optional[EmailStr] = None
-    is_active: Optional[bool] = True
+    email: EmailStr
     is_superuser: bool = False
+    is_active: bool = True
     full_name: Optional[str] = None
-    joined_on: Optional[datetime] = None
+    created_on: Optional[datetime] = None
 
 
 # Properties to receive via API on creation
 class UserCreate(UserBase):
     email: EmailStr
     password: str
-    organization = ""
+
+
+class UserRegister(BaseModel):
+    full_name: str
+    email: EmailStr
+    password: str
 
 
 # Properties to receive via API on update
 class UserUpdate(UserBase):
     password: Optional[str] = None
-    organization: Optional[str] = None
 
 
 class UserInDBBase(UserBase):

@@ -6,7 +6,7 @@ def test_database_creation_request(client):
             "superuser_email": "test@firstuser.com",
             "superuser_password": "asdf",
             "database_name": "test_database_endpoints",
-            "alembic_revisions": ["fe0674e45ba8"],
+            "alembic_revisions": ["compchem@head"],
         },
     )
     assert out.status_code == 200

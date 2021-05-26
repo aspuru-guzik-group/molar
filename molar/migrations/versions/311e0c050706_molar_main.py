@@ -1,17 +1,17 @@
 """molar-main
 
-Revision ID: 8c865f1ab81a
-Revises: fb3f43ec8aaa
-Create Date: 2021-04-21 15:04:52.892851
+Revision ID: 311e0c050706
+Revises: bf3c5d811155
+Create Date: 2021-05-26 09:19:46.953180
 
 """
 import sqlalchemy as sa
-from alembic import op
 from sqlalchemy.dialects import postgresql as pgsql
+from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = "8c865f1ab81a"
-down_revision = "fb3f43ec8aaa"
+revision = "311e0c050706"
+down_revision = "bf3c5d811155"
 branch_labels = ("molar-main",)
 depends_on = None
 

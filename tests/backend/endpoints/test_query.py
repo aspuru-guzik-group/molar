@@ -15,6 +15,49 @@ def insert_dummy_data(client, new_database_headers):
         },
     )
     assert out.status_code == 200
+    molecule = out.json()
+    out = client.post(
+        "/api/v1/eventstore/test_database",
+        headers=new_database_headers,
+        json={
+            "type": "conformer",
+            "data": {
+                "x": [0],
+                "y": [1],
+                "z": [2],
+                "atomic_numbers": [2],
+                "molecule_id": molecule["uuid"],
+            },
+        },
+    )
+    assert out.status_code == 200
+    conformer = out.json()
+    out = client.post(
+        "/api/v1/eventstore/test_database",
+        headers=new_database_headers,
+        json={
+            "type": "software",
+            "data": {
+                "name": "cp2k",
+                "version": "v1.0",
+            },
+        },
+    )
+    assert out.status_code == 200
+    software = out.json()
+    out = client.post(
+        "/api/v1/eventstore/test_database",
+        headers=new_database_headers,
+        json={
+            "type": "calculation",
+            "data": {
+                "conformer_id": conformer["uuid"],
+                "software_id": software["uuid"],
+                "output_conformer_id": conformer["uuid"],
+            },
+        },
+    )
+
     out = client.post(
         "/api/v1/eventstore/test_database",
         headers=new_database_headers,
@@ -144,3 +187,77 @@ class TestQuery:
         assert out.status_code == 200
         data = out.json()
         len(data) == 1
+
+    def test_ambiguous_joins(self, client, new_database_headers):
+        out = client.get(
+            "/api/v1/query/test_database",
+            headers=new_database_headers,
+            json={"types": "calculation", "joins": {"type": "conformer"}},
+        )
+        assert out.status_code == 400
+        out = client.get(
+            "/api/v1/query/test_database",
+            headers=new_database_headers,
+            json={
+                "types": "calculation",
+                "joins": {
+                    "type": "conformer",
+                    "on": {
+                        "column1": "conformer.conformer_id",
+                        "column2": "calculation.conformer_id",
+                    },
+                },
+            },
+        )
+        assert out.status_code == 200
+
+        out = client.get(
+            "/api/v1/query/test_database",
+            headers=new_database_headers,
+            json={
+                "types": "calculation",
+                "joins": [
+                    {
+                        "type": "conformer",
+                        "on": {
+                            "column1": "conformer.conformer_id",
+                            "column2": "calculation.conformer_id",
+                        },
+                    },
+                    {
+                        "type": "conformer",
+                        "on": {
+                            "column1": "conformer.conformer_id",
+                            "column2": "calculation.output_conformer_id",
+                        },
+                    },
+                ],
+            },
+        )
+        assert out.status_code == 400
+
+        out = client.get(
+            "/api/v1/query/test_database",
+            headers=new_database_headers,
+            json={
+                "types": "calculation",
+                "joins": [
+                    {
+                        "type": "conformer",
+                        "on": {
+                            "column1": "conformer.conformer_id",
+                            "column2": "calculation.conformer_id",
+                        },
+                    },
+                    {
+                        "type": "conformer",
+                        "on": {
+                            "column1": "conformer.conformer_id",
+                            "column2": "calculation.output_conformer_id",
+                        },
+                        "alias": "output_conformer",
+                    },
+                ],
+            },
+        )
+        assert out.status_code == 200

@@ -1,19 +1,21 @@
-import configparser
-import json
 import logging
-from typing import Any, Callable, Dict, List, Optional
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional, Union
+from uuid import UUID
 
-import numpy as np
 import pandas as pd
-import sqlalchemy
+import requests
+from fastapi import HTTPException
+from jose import jwt
+from pydantic import BaseModel, EmailStr
+from requests import models
+from requests.api import head
 from rich.logging import RichHandler
-from sqlalchemy import and_, text
-from tqdm import tqdm
 
-from . import database as db
-from .config import ClientConfig
-from .mappers import *
-from .registry import REGISTRIES, compute_requirement_score
+import molar
+
+from .client_config import ClientConfig
+from .exceptions import MolarBackendError
 
 FORMAT = "%(message)s"
 logging.basicConfig(
@@ -22,285 +24,409 @@ logging.basicConfig(
 
 
 class Client:
-    def __init__(
-        self,
-        cfg: ClientConfig,
-        logger: Optional[logging.Logger] = None,
-    ):
+    def __init__(self, cfg: ClientConfig):
         self.cfg = cfg
-        Session, engine, models = db.init_database(self.cfg.sql_url)
-        self.session = Session()
-        self.engine = engine
-        self.models = models
-        self.logger = logger or logging.getLogger("molar")
-
+        self.logger = logging.getLogger("molar")
         if self.logger:
-            self.logger.setLevel(cfg.log_level)
+            self.logger.setLevel(self.cfg.log_level)
+        self.__headers: Dict[str, str] = {}
+        self.__token: Optional[str] = None
 
-        self.dao = DataAccessObject(self.session, self.models)
+        # TODO need to perform some parsing
+        # TODO compare to the current client python/molar version
+        # if not (user_header == "molar v0.3 python v2.7.3"):
+        #     self.logger.debug("Current Client is out of date")
 
-        self.database_specs = db.fetch_database_specs(self.session)
+    @property
+    def token(self):
+        if self.__token is None:
+            token = self.authenticate()
+            self.__token = token
 
-        self.registered_mappers = {}
-        self.registered_queries = {}
-        self.registered_sql = {}
+        claims = jwt.get_unverified_claims(self.__token)
+        exp = datetime.fromtimestamp(claims["exp"])
 
-        self.set_registry_functions(
-            REGISTRIES["mappers"], self.mapper_decorator, self.registered_mappers
-        )
-        self.set_registry_functions(
-            REGISTRIES["queries"], self.query_decorator, self.registered_queries
-        )
-        self.set_registry_functions(
-            REGISTRIES["sql"], self.sql_query_decorator, self.registered_sql
-        )
+        if exp + timedelta(seconds=30) < datetime.utcnow():
+            token = self.authenticate()
+            self.__token = token
+        return self.__token
 
-    def set_registry_functions(
-        self, registry: List[Dict], decorator: Callable, internal_registry: Dict
-    ) -> None:
-        items_to_use = {}
-        for item in registry:
-            requirements_score = compute_requirement_score(
-                self.database_specs, item["requirements"], item["requirements_bonus"]
-            )
-            item["score"] = requirements_score
-            if item["name"] not in items_to_use.keys():
-                items_to_use[item["name"]] = item
-                continue
+    @property
+    def headers(self):
+        if "Authorization" not in self.__headers.keys():
+            self.__headers["Authorization"] = f"Bearer {self.token}"
+        if "User-Agent" not in self.__headers.keys():
+            self.__headers["User-Agent"] = f"Molar v{molar.__version__}"
+        return self.__headers
 
-            if requirements_score > items_to_use[item["name"]]["score"]:
-                items_to_use[item["name"]] = item
-
-        for name, item in items_to_use.items():
-            if getattr(self, name, None) is not None:
-                raise ValueError(
-                    f"{name} is already used! Please use another name for this function"
-                )
-
-            setattr(self, name, decorator(item["func"], item["table"]))
-            internal_registry[name] = item["func"]
-
-    @staticmethod
-    def from_config_file(config_file: str, section_name: str = None) -> "Client":
-        config_parser = configparser.ConfigParser()
-        config_parser.read(config_file)
-        if section_name is None:
-            section_name = config_parser.sections()[0]
-
-        assert (
-            section_name in config_parser
-        ), f"Section {section_name} could not be found in the config file {config_file}"
-        config = ClientConfig.from_dict(config_parser[section_name])
-        return Client(config)
-
-    def __delete__(self):
-        self.session.close()
-
-    def mapper_decorator(self, func: Callable, table: str) -> Callable:
-        def inner(*args, **kwargs):
-            data = func(*args, **kwargs)
-            event = self.dao.add(table, data)
-            issue = self.dao.commit_or_fetch_event(table, data)
-            if issue:
-                self.logger.warn(
-                    (
-                        f"Could not add new row to table {table} "
-                        f"with data {data} because it already exists!"
-                    )
-                )
-                return issue
-            self.logger.debug(f"Adding item to table {table} with data {data}")
-            return event
-
-        return inner
-
-    def query_decorator(
-        self, func: Callable, table: str, return_pandas_dataframe=None
-    ) -> Callable:
-        def inner(*args, **kwargs):
-            if return_pandas_dataframe is None:
-                return_pandas_dataframe = self.cfg.return_pandas_dataframe
-            query = func(self.models, *args, **kwargs)
-            data = self.dao.get(table, **query)
-            if return_pandas_dataframe:
-                records = [d.__dict__ for d in data]
-                df = pd.DataFrame.from_records(records)
-                return df.replace({np.nan: None})
-            return data
-
-        return inner
-
-    def sql_query_decorator(self, func: Callable, table: str) -> Callable:
-        def inner(*args, **kwargs):
-            sql = text(func(*args, **kwargs))
-            data = self.session.execute(sql).fetchall()
-            # TODO what if we want a dataframe here?
-            return data
-
-        return inner
-
-    def get(
+    def request(
         self,
-        table: str,
-        filters: Optional[List] = None,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
-        order_by: Optional[Any] = None,
+        url: str,
+        method: str,
+        params=None,
+        json=None,
+        data=None,
+        headers=None,
+        return_pandas_dataframe=False,
     ):
-        if table not in self.database_specs["table"]:
-            raise ValueError(
-                f"Table {table} does not exisits in the database {self.cfg.database}!"
+        if not url.startswith("/"):
+            url = "/" + url
+
+        response = requests.request(
+            method,
+            f"{self.cfg.base_url}{url}",
+            params=params,
+            json=json,
+            data=data,
+            headers=headers,
+        )
+        if response.status_code == 500:
+            raise MolarBackendError(status_code=500, message="Server Error")
+
+        out = response.json()
+
+        if response.status_code != 200:
+            raise MolarBackendError(
+                status_code=response.status_code, message=out["detail"]
             )
-        return self.dao.get(table, filters, limit, offset, order_by)
 
+        if return_pandas_dataframe:
+            return pd.DataFrame.from_records(out)
 
-class DataAccessObject:
-    """Defines the low level interactions between MDBClient and the database.
-    It is not meant to be used on its own.
+        if out is not None and "msg" in out.keys():
+            self.logger.info(out["msg"])
+            return out
 
-    :session: (sqlalchemy.orm.session.Session)
-    :models: (sqlalchemy.orm.mapper)
+        return out
+
+    """
+    USER RELATED ACTIONS
     """
 
-    def __init__(self, session, models):
-        self.session = session
-        self.models = models
+    def authenticate(self):
+        response = self.request(
+            f"/login/access-token?database={self.cfg.database_name}",
+            method="POST",
+            data={
+                "username": self.cfg.username,
+                "password": self.cfg.password,
+            },
+        )
+        return response["access_token"]
 
-    def get(self, table_name, filters=None, limit=None, offset=None, order_by=None):
-        """Reads data from a table.
+    def test_token(self):
+        return self.request(
+            "/login/test-token",
+            method="POST",
+            params={"database_name": self.cfg.database_name},
+            headers=self.headers,
+        )
 
-        :param table_name (str):
-        :param filters (list):
-        :param limit (int or None):
-        :param offset (int or None):
-        :param order_by (asc or desc clause):
-        """
+    def test_email(self, email: EmailStr):
+        return self.request(
+            "/utils/test-emails",
+            method="POST",
+            params={"email_to": email},
+            headers=self.headers,
+        )
 
-        if not isinstance(table_name, list):
-            table_name = [table_name]
+    def recover_password(self, email: EmailStr):
+        # static method because client object cant be created without a password
+        # no header because it is a static method
+        return self.request(f"/password-recovery/{email}", method="POST")
 
-        t = table_name.pop(0)
-        model = getattr(self.models, t, None)
-        assert model is not None, f"{t} does not correspond to any table!"
+    def reset_password(self, token: str, new_password: str):
+        # static method because client object cant be created without a password
+        # no header beaause it is a static method
+        data = {
+            "token": token,
+            "new_password": new_password,
+        }
+        return self.request("/reset-password", method="POST", data=data)
 
-        order_by_col = getattr(model, "updated_on", None)
-        if order_by_col is None:
-            order_by_col = getattr(model, "timestamp", None)
+    """
+    DATABASE RELATED ACTIONS
+    """
 
-        if order_by is None:
-            order_by = order_by_col.desc()
-        query = self.session.query(model)
+    def database_creation_request(
+        self, database_name: str, alembic_revisions: List[str]
+    ):
+        databasemodel = {
+            "database_name": database_name,
+            "superuser_fullname": self.cfg.fullname,
+            "superuser_email": self.cfg.username,
+            "superuser_password": self.cfg.password,
+            "alembic_revisions": alembic_revisions,
+        }
+        return self.request(
+            "/database/request", method="POST", json=databasemodel, headers=self.headers
+        )
 
-        for t in table_name:
-            model = getattr(self.models, t, None)
-            assert model is not None, f"{t} does not correspond to any table!"
-            query = query.join(model)
+    def get_database_requests(self, return_pandas_dataframe=True):
+        return self.request(
+            "/database/requests",
+            method="GET",
+            headers=self.headers,
+            return_pandas_dataframe=return_pandas_dataframe,
+        )
 
-        if filters is not None:
-            filter = True
-            for f in filters:
-                filter = and_(filter, f)
-            query = query.filter(filter)
-        query = query.order_by(order_by)
+    def approve_database(self, database_name: str):
+        return self.request(
+            f"/database/approve/{database_name}",
+            method="PUT",
+            headers=self.headers,
+        )
 
-        if limit is None:
-            return query.all()
+    def remove_database_request(self, database_name: str):
+        return self.request(
+            f"/database/request/{database_name}",
+            method="DELETE",
+            headers=self.headers,
+        )
 
-        if offset is not None:
-            query = query.offset(offset)
-        query = query.limit(limit)
+    def remove_database(self, database_name):
+        return self.request(
+            f"/database/{database_name}", method="DELETE", headers=self.headers
+        )
 
-        return query
+    """
+    EVENTSTORE RELATED ACTIONS
+    """
 
-    def add(self, table_name, data):
-        """Adds data to the database. This corresponds to a 'create' event on
-        the eventstore with a 'type' of table_name.
+    def view_entries(
+        self,
+        database_name: str,
+    ):
+        return self.request(
+            f"/eventstore/{database_name}",
+            method="GET",
+            return_pandas_dataframe=True,
+            headers=self.headers,
+        )
 
-        :param table_name:
-        :param data:
-        """
-        params = {"event": "create", "type": table_name, "data": data}
-        event = self.models.eventstore(**params)
-        self.session.add(event)
-        return event
+    # should it be possible to store data without type or vice versa
+    def create_entry(
+        self,
+        database_name: str,
+        type: str,
+        data: Dict[str, Any],
+    ):
+        datum = {
+            "type": type,
+            "data": data,
+        }
+        return self.request(
+            f"/eventstore/{database_name}",
+            method="POST",
+            json=datum,
+            headers=self.headers,
+            return_pandas_dataframe=True,
+        )
 
-    def delete(self, table_name, id):
-        """Deletes data from the databse. This corresponds to a 'delete' event
-        on the eventstore with a 'type' of table_name.
+    def update_entry(
+        self,
+        database_name: str,
+        uuid: UUID,
+        type: str,
+        data: Dict[str, Any],
+    ):
+        datum = {
+            "type": type,
+            "data": data,
+            "uuid": uuid,
+        }
+        return self.request(
+            f"/eventstore/{database_name}",
+            method="PATCH",
+            json=datum,
+            headers=self.headers,
+            return_pandas_dataframe=True,
+        )
 
-        :param table_name:
-        :param id:
-        """
-        params = {"event": "delete", "type": table_name, "uuid": id}
-        event = self.models.eventstore(**params)
-        self.session.add(event)
-        return event
+    def delete_entry(
+        self,
+        database_name: str,
+        uuid: UUID,
+        type: str,
+    ):
+        datum = {
+            "type": type,
+            "uuid": uuid,
+        }
+        return self.request(
+            f"/eventstore/{database_name}",
+            method="DELETE",
+            json=datum,
+            headers=self.headers,
+            return_pandas_dataframe=True,
+        )
 
-    def update(self, table_name, data, id):
-        """Updates data from the database. This corresponds to an 'update'
-        event on the eventstore with a 'type' of table_name.
+    """
+    QUERYING RELATED ACTIONS
+    """
 
-        :param table_name:
-        :param data:
-        :param id:
-        """
-        params = {"event": "update", "type": table_name, "data": data, "uuid": id}
-        event = self.models.eventstore(**params)
-        self.session.add(event)
-        return event
+    def query_database(
+        self,
+        database_name: str,
+        type: Union[str, List[str]],
+        limit: Optional[int],
+        offset: Optional[int],
+        join_on: Optional[str],
+        join_type: Optional[str],
+        filter_on: Optional[str],
+        filter_op: Optional[str],
+        filter_value: Optional[str],
+        order_by: Optional[str],
+    ):
+        # invalid filter
+        if not (filter_on and filter_op and filter_value) and (
+            filter_on or filter_op or filter_value
+        ):
+            raise ValueError(
+                "Invalid filter values: must either have all filter values or none"
+            )
 
-    def rollback(self, before):
-        """Rollback the database. This corresponds to a 'rollback' event on the
-        eventstore. For now, until rollback to a specific date is available.
+        # invalid join values
+        if not join_on and join_type:
+            raise ValueError("Must join on something if there is a join type specified")
 
-        :param before: (datetime.dateime)
-        """
+        json = {
+            "type": type,
+            "limit": limit,
+            "offset": offset,
+            "joins": {
+                "type": join_on,
+                "join_type": join_type,
+            },
+            "filter": {
+                "type": filter_on,
+                "op": filter_op,
+                "value": filter_value,
+            },
+            "order_by": order_by,
+        }
 
-        params = {"event": "rollback", "data": {"before": before.isoformat()}}
-        event = self.models.eventstore(**params)
-        self.session.add(event)
-        return event
+        return self.request(
+            f"/query/{database_name}",
+            method="GET",
+            headers=self.headers,
+            return_pandas_dataframe=True,
+        )
 
-    def commit_or_fetch_event(self, table_name, data):
-        """Tries to commit the current transation and if it fails, fetches the
-        corresponding event in the eventstore table."""
-        try:
-            self.session.commit()
-        except sqlalchemy.exc.IntegrityError as ex:
-            if "UniqueViolation" in ex._message():
-                self.session.rollback()
-                filters = ""
-                for k, v in data.items():
-                    if isinstance(v, dict):
-                        filters += f"data->'{k}' = '{json.dumps(v)}'::jsonb and "
-                        continue
-                    filters += f"data->>'{k}' = '{v}' and "
+    """
+    ALEMBIC RELATED ACTIONS
+    """
 
-                # Single query to retrieve the event
-                sql = text(
-                    f"""
-                    select uuid,
-                           type,
-                           jsonb_agg(data)->>-1 as data,
-                           string_agg("event", ',') as event,
-                           max(timestamp) as timestamp
-                      from sourcing.eventstore
-                      join {table_name}
-                        on eventstore.uuid = {table_name}_id
-                     where {filters[:-4]}
-                  group by uuid, type
-                    having not right(string_agg("event", ','), 6) = 'delete'
-                  order by min(eventstore.id) asc;
-                """
-                )
-                out = self.session.execute(sql).fetchall()
-                # It's a UniqueViolation... there should be only one
-                if len(out) != 1:
-                    raise ex
+    def get_alembic_revisions(self, return_pandas_dataframe=True):
+        return self.request(
+            "/alembic/revisions",
+            method="GET",
+            headers=self.headers,
+            return_pandas_dataframe=return_pandas_dataframe,
+        )
 
-                # Returning uuid as str
-                out[0]._processors[0] = lambda x: str(x)
-                return out[0]
-            else:
-                self.session.rollback()
-                raise ex
+    def alembic_upgrade(self, revision: str, database_name: Optional[str] = None):
+        if database_name is None:
+            database_name = self.cfg.database_name
+        return self.request(
+            "/alembic/upgrade",
+            method="POST",
+            params={
+                "database_name": database_name,
+                "revision": revision,
+            },
+            headers=self.headers,
+        )
+
+    def alembic_downgrade(self, revision: str, database_name: Optional[str] = None):
+        if database_name is None:
+            database_name = self.cfg.database_name
+        return self.request(
+            "/alembic/downgrade",
+            method="POST",
+            params={
+                "database_name": database_name,
+                "revision": revision,
+            },
+            headers=self.headers,
+        )
+
+    """
+    USER MANAGEMENT RELATED ACTIONS
+    """
+
+    def get_users(self):
+        return self.request(
+            "/user/get-users",
+            method="GET",
+            headers=self.headers,
+        )
+
+    def add_user(
+        self,
+        email: EmailStr,
+        password: str,
+        organization: str,
+        is_active: Optional[bool] = True,
+        is_superuser: bool = False,
+        full_name: Optional[str] = None,
+    ):
+        user_create_model = {
+            "email": email,
+            "password": password,
+            "organization": organization,
+            "is_active": is_active,
+            "is_superuser": is_superuser,
+            "full_name": full_name,
+            "joined_on": datetime.now(),
+        }
+        # check if current user is superuser is in backend
+        response = self.request(
+            "/user/add-users",
+            method="POST",
+            data=user_create_model,
+            headers=self.headers,
+        )
+        if response:
+            return f"The user {email} has been created!"
+        else:
+            return f"The user {email} hasn't been created."
+
+    def get_user_by_id(self, id: int):
+        return self.request(
+            f"/user/{id}",
+            method="GET",
+            headers=self.headers,
+            return_pandas_dataframe=True,
+        )
+
+    def update_user(
+        self,
+        id: int,
+        password: Optional[str] = None,
+        organization: Optional[str] = None,
+        is_active: Optional[bool] = True,
+        is_superuser: bool = False,
+        full_name: Optional[str] = None,
+    ):
+        user_update_model = {
+            "password": password,
+            "organization": organization,
+            "is_active": is_active,
+            "is_superuser": is_superuser,
+            "full_name": full_name,
+        }
+        return self.request(
+            f"/user/{id}",
+            method="PUT",
+            data=user_update_model,
+            headers=self.headers,
+            return_pandas_dataframe=True,
+        )
+
+    """
+    DEBUGGING
+    """
+
+    def test(self):
+        return self.request("/utils/test/api", method="GET")

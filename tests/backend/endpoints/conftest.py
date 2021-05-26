@@ -33,7 +33,7 @@ def new_database_headers(client, molar_main_headers):
             "superuser_email": "test@firstuser.com",
             "superuser_password": "asdf",
             "database_name": "test_database",
-            "alembic_revisions": ["fe0674e45ba8"],
+            "alembic_revisions": ["compchem@head"],
         },
     )
     assert out.status_code == 200
