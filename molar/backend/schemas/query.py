@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, List, Union
+from typing import Any, List, Optional, Union
 
 from pydantic import BaseModel
 
@@ -30,9 +30,16 @@ class LogicalOperators(str, Enum):
     or_ = "or"
 
 
+class QueryJoinOnClause(BaseModel):
+    column1: str
+    column2: str
+
+
 class QueryJoin(BaseModel):
     type: str
     join_type: JoinType = JoinType.inner
+    on: Optional[QueryJoinOnClause] = None
+    alias: Optional[str] = None
 
 
 class QueryFilter(BaseModel):

@@ -3,7 +3,7 @@ from typing import List, Optional, Union
 import sqlalchemy
 from molar.backend import schemas
 from molar.backend.database.utils import sqlalchemy_to_dict
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, aliased
 
 
 def resolve_type(type: str, models):
@@ -44,8 +44,18 @@ def query_builder(
         if not isinstance(joins, list):
             joins = [joins]
         for join in joins:
+            joined_table = resolve_type(join.type, models)
+            if join.alias is not None:
+                joined_table = aliased(joined_table, name=join.alias)
+            onclause = None
+            if join.on is not None:
+                onclause = resolve_type(join.on.column1, models) == resolve_type(
+                    join.on.column2, models
+                )
+
             query = query.join(
-                resolve_type(join.type, models),
+                joined_table,
+                onclause,
                 isouter=True if join.join_type == "outer" else False,
                 full=True if join.join_type == "full" else False,
             )

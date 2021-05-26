@@ -31,4 +31,13 @@ def query(
         )
     except ValueError as err:
         raise HTTPException(status_code=400, detail=str(err))
+    except sqlalchemy.exc.AmbiguousForeignKeysError as err:
+        raise HTTPException(status_code=400, detail=str(err))
+    except sqlalchemy.exc.ProgrammingError as err:
+        if "specified more than once":
+            raise HTTPException(
+                status_code=400,
+                detail="A field is specified more than once in the query!",
+            )
+        raise HTTPException(status_code=400, detail=str(err))
     return query
