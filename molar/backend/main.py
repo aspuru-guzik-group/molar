@@ -1,11 +1,14 @@
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
+from molar import __version__
 from .api.api_v1.api import api_router
 from .core.config import settings
 
 app = FastAPI(
-    title=settings.PROJECT_NAME, openapi_url=f"{settings.API_V1_STR}/openapi.json"
+    title=settings.PROJECT_NAME, 
+    version=__version__,
+    openapi_url=f"{settings.API_V1_STR}/openapi.json"
 )
 
 # Set all CORS enabled origins
