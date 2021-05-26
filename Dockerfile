@@ -43,12 +43,19 @@ RUN apt-get update \
  && rm -rf ${PG_HOME} \
  && rm -rf /var/lib/apt/lists/*
 
-RUN apt-get install python
 
+
+RUN apt-get install -y python3 python3-pip
+
+COPY molar /
+RUN pip3 install /molar
+
+#RUN pip3 install molar[backend]
 
 COPY runtime/ ${PG_APP_HOME}/
-COPY molar /home/
+
 COPY entrypoint.sh /sbin/entrypoint.sh
+
 
 RUN chmod 755 /sbin/entrypoint.sh
 
