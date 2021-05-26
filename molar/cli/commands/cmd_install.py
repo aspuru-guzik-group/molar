@@ -13,7 +13,7 @@ from molar import sql_utils
 from passlib.context import CryptContext
 from rich.console import Console
 from rich.prompt import Confirm, Prompt
-
+from time import sleep
 from .. import alembic_utils
 
 # from .. import sql_utils
@@ -31,12 +31,7 @@ def install(ctx):
     pass
 
 
-# TODO: global install of config file?
-# TODO: installing without asking anything
-
-
 @install.command(cls=CustomClickCommand, help="Spin up Molar locally with docker")
-
 @click.option(
     "--postgres-password", prompt="Chose a password for postgres user", hide_input=True
 )
@@ -50,7 +45,14 @@ def install(ctx):
 @click.option("--superuser-email", type=str, default=None)
 @click.option("--superuser-password", type=str, default=None)
 @click.pass_context
-def local(ctx, postgres_password, container_name,superuser_name, superuser_email, superuser_password):
+def local(
+    ctx,
+    postgres_password,
+    container_name,
+    superuser_name,
+    superuser_email,
+    superuser_password,
+):
     console = ctx.obj["console"]
     if not find_executable("docker"):
         console.log(
@@ -79,6 +81,7 @@ def local(ctx, postgres_password, container_name,superuser_name, superuser_email
         ):
             sleep(1)
 
+    sleep(2)
     _install_molar(ctx, "localhost", "postgres", postgres_password)
 
     console.log("Creating the first user!")

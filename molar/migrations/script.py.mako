@@ -6,6 +6,7 @@ Create Date: ${create_date}
 
 """
 from alembic import op
+from sqlalchemy.dialects import postgresql as pgsql
 import sqlalchemy as sa
 ${imports if imports else ""}
 

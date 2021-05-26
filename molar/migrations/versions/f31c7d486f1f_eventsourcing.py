@@ -1,18 +1,19 @@
 """eventsourcing
 
-Revision ID: c59a26437bf4
-Revises: 
-Create Date: 2021-03-24 15:27:53.540069
+Revision ID: f31c7d486f1f
+Revises: bf3c5d811155
+Create Date: 2021-05-26 09:20:26.242476
 
 """
 import pkg_resources
-import sqlalchemy as sa
 from alembic import op
+import sqlalchemy as sa
+
 
 # revision identifiers, used by Alembic.
-revision = "c59a26437bf4"
-down_revision = None
-branch_labels = ("eventsourcing",)
+revision = 'f31c7d486f1f'
+down_revision = 'bf3c5d811155'
+branch_labels = ('eventsourcing',)
 depends_on = None
 
 
