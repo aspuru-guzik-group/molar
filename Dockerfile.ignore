@@ -45,7 +45,7 @@ RUN apt-get update \
 
 
 
-RUN apt-get install -y python3 python3-pip
+#RUN apt-get install -y python3.7 python3.7-pip
 
 COPY molar /
 RUN pip3 install /molar
@@ -55,7 +55,6 @@ RUN pip3 install /molar
 COPY runtime/ ${PG_APP_HOME}/
 
 COPY entrypoint.sh /sbin/entrypoint.sh
-
 
 RUN chmod 755 /sbin/entrypoint.sh
 

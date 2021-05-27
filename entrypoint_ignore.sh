@@ -17,17 +17,19 @@ fi
 
 # default behaviour is to launch postgres
 if [[ -z ${1} ]]; then
-  map_uidgid
+  #map_uidgid
 
-  create_datadir
-  create_certdir
-  create_logdir
-  create_rundir
+  #create_datadir
+  #create_certdir
+  #create_logdir
+  #create_rundir
 
-  set_resolvconf_perms
+  #set_resolvconf_perms
 
-  configure_postgresql
+  #configure_postgresql
+  python molar/setup.pp
 
+  
   echo "Starting PostgreSQL ${PG_VERSION}..."
   exec start-stop-daemon --start --chuid "${PG_USER}:${PG_USER}" \
     --exec "${PG_BINDIR}/postgres" -- -D "${PG_DATADIR}" ${EXTRA_ARGS}

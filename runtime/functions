@@ -3,6 +3,20 @@ set -e
 shopt -s extglob
 source ${PG_APP_HOME}/env-defaults
 
+PG_CONF=${PG_DATADIR}/postgresql.conf
+
+#TODO these needed?
+#PG_HBA_CONF=${PG_DATADIR}/pg_hba.conf
+#PG_IDENT_CONF=${PG_DATADIR}/pg_ident.conf
+#PG_RECOVERY_CONF=${PG_DATADIR}/recovery.conf
+
+exec_as_postgres() {
+  sudo -HEu ${PG_USER} "$@"
+}
+
+install_python(){
+  
+}
 
 
 create_datadir() {
