@@ -6,7 +6,7 @@ COPY setup.* ./
 
 COPY molar/ /
 
-RUN pip install --upgrade pip && pip install --no-cache-dir fastapi && pip install -e .
+RUN pip install --upgrade pip && pip install --no-cache-dir fastapi && pip install molar
 
 
 
