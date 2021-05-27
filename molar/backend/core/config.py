@@ -1,7 +1,10 @@
-import secrets
+# std
 from pathlib import Path
+import secrets
 from typing import Any, Dict, List, Optional, Union
 
+# external
+import pkg_resources
 from pydantic import AnyHttpUrl, BaseSettings, EmailStr, HttpUrl, PostgresDsn, validator
 
 
@@ -56,7 +59,9 @@ class Settings(BaseSettings):
         return v
 
     EMAIL_RESET_TOKEN_EXPIRE_HOURS: int = 48
-    EMAIL_TEMPLATES_DIR: str = "./molar/backend/email-templates/build"
+    EMAIL_TEMPLATES_DIR: str = pkg_resources.resource_filename(
+        "molar", "backend/email-templates/build"
+    )
     EMAILS_ENABLED: bool = False
 
     @validator("EMAILS_ENABLED", pre=True)
