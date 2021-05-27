@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from pydantic import BaseModel, EmailStr
 
@@ -16,3 +16,14 @@ class DatabaseCreate(DatabaseBase):
 
 class DatabaseUpdate(DatabaseCreate):
     is_approved: bool
+
+
+class DatabaseInformation(BaseModel):
+    table_name: str
+    column_name: str
+    type: str
+    subtype: Optional[str]
+    is_nullable: str
+    constraint_name: Optional[str]
+    containt_type: Optional[str]
+    references: Optional[str]

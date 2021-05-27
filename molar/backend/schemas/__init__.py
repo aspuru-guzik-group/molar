@@ -1,4 +1,4 @@
-from .database import DatabaseCreate, DatabaseUpdate
+from .database import DatabaseCreate, DatabaseInformation, DatabaseUpdate
 from .eventstore import EventStore, EventStoreCreate, EventStoreDelete, EventStoreUpdate
 from .msg import Msg
 from .query import QueryFilter, QueryFilterList, QueryJoin

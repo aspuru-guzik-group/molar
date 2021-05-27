@@ -1,10 +1,35 @@
 version: "3.9"
 services:
   backend:
-    build: 
-      context: .
-      dockerfile: Dockerfile.backend
+    image: "matterlab/molar:latest"
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - POSTGRES_SERVER=$POSTGRES_SERVER
+      - POSTGRES_USER=$POSTGRES_USER
+      - POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+      - SERVER_NAME=$SERVER_NAME
+      - SERVER_HOST=$SERVER_HOST
+      - SMTP_TLS=$SMTP_TLS
+      - SMTP_HOST=$SMTP_HOST
+      - SMTP_USER=$SMTP_USER
+      - SMTP_PASSWORD=$SMTP_PASSWORD
+      - EMAILS_FROM_EMAIL=$EMAILS_FROM_EMAIL
+      - EMAILS_FROM_NAME=$EMAILS_FROM_NAME
+      - EMAILS_ENABLED=$EMAILS_ENABLED
   postgres:
     image: "postgres:13"
+    restart: always
+    healthcheck:
+      test: ["CMD", "pg_isready", "-q"]
+      timeout: 45s
+      interval: 10s
+      retries: 10
     ports:
       - "5432:5432"
+    volumes:
+      - "$DATA_DIR/postgres:/var/lib/postgresql/data"
+    environment:
+      - POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+

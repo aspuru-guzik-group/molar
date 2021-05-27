@@ -18,6 +18,11 @@ def test_get_database_requests(client, molar_main_headers):
     assert len(out.json()) == 1
 
 
+def test_get_database_information(client, molar_main_headers):
+    out = client.get("/api/v1/database/information", headers=molar_main_headers)
+    assert out.status_code == 200
+
+
 def test_approve_database(client, molar_main_headers):
     out = client.put(
         "/api/v1/database/approve/test_database_endpoints", headers=molar_main_headers

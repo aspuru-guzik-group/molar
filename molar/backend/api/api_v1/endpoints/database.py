@@ -9,6 +9,7 @@ from molar.backend.api import deps
 from molar.backend.core.config import settings
 from molar.backend.core.security import get_password_hash
 from molar.backend.crud import CRUDInterface
+from molar.backend.database.query import INFORMATION_QUERY
 from sqlalchemy.orm import Session
 
 router = APIRouter()
@@ -41,6 +42,25 @@ def get_database_requests(
 ):
     out = db.query(database.main.models.molar_database).all()
     return out
+
+
+@router.get("/information", response_model=List[schemas.DatabaseInformation])
+def get_database_information(
+    db: Session = Depends(deps.get_db),
+    current_user=Depends(deps.get_current_active_user),
+):
+    results = db.execute(INFORMATION_QUERY).all()
+    column_names = [
+        "table_name",
+        "column_name",
+        "type",
+        "subtype",
+        "is_nullable",
+        "constraint_name",
+        "constraint_type",
+        "references",
+    ]
+    return [dict(zip(column_names, result)) for result in results]
 
 
 @router.put("/approve/{database_name}", response_model=schemas.Msg)
