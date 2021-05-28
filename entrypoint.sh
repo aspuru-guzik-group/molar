@@ -1,5 +1,11 @@
 #!/bin/sh
 
+POSTGRES_SERVER=${POSTGRES_SERVER:-localhost}
+POSTGRES_USER=${POSTGRES_USER:-postgers}
+POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-}
+BACKEND_NUM_WORKERS=${BACKEND_NUM_WORKERS:-2}
+BACKEND_PORT=${BACKEND_PORT:-8000}
+
 export PGPASSWORD=$POSTGRES_PASSWORD
 
 MAX_RETRIES=10
@@ -22,4 +28,7 @@ if ! echo $DATABASES | grep -w -q molar_main > /dev/null; then
     --postgres-password $POSTGRES_PASSWORD 
 fi
 
-uvicorn --port 8000 molar.backend.main:app 
+uvicorn \
+  --workers $BACKEND_NUM_WORKERS \
+  --port $BACKEND_PORT \
+  molar.backend.main:app 
