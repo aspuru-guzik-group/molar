@@ -3,8 +3,15 @@ services:
   backend:
     image: "matterlab/molar:latest"
     restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://backend:$BACKEND_PORT"]
+      timeout: 30s
+      interval: 10s
+      retries: 10
     ports:
-      - "8000:8000"
+      - "$BACKEND_PORT:$BACKEND_PORT"
+    volumnes:
+      - "$DATA_DIR/migrations:/alembic"
     environment:
       - POSTGRES_SERVER=$POSTGRES_SERVER
       - POSTGRES_USER=$POSTGRES_USER
