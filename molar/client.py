@@ -1,17 +1,20 @@
-import logging
+# std
 from datetime import datetime, timedelta
+import logging
 from typing import Any, Dict, List, Optional, Union
 from uuid import UUID
 
-import pandas as pd
-import requests
+# external
 from fastapi import HTTPException
 from jose import jwt
+import pandas as pd
 from pydantic import BaseModel, EmailStr
+import requests
 from requests import models
 from requests.api import head
 from rich.logging import RichHandler
 
+# molar
 import molar
 
 from .client_config import ClientConfig
@@ -19,7 +22,7 @@ from .exceptions import MolarBackendError
 
 FORMAT = "%(message)s"
 logging.basicConfig(
-    level="NOTSET", format=FORMAT, datefmt="[%X]", handlers=[RichHandler()]
+    level="INFO", format=FORMAT, datefmt="[%X]", handlers=[RichHandler()]
 )
 
 

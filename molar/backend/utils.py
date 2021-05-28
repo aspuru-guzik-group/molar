@@ -1,8 +1,10 @@
-import logging
+# std
 from datetime import datetime, timedelta
+import logging
 from pathlib import Path
 from typing import Any, Dict, Optional
 
+# external
 import emails
 from emails.template import JinjaTemplate
 from jose import jwt
@@ -29,7 +31,12 @@ def send_email(
         smtp_options["user"] = settings.SMTP_USER
     if settings.SMTP_PASSWORD:
         smtp_options["password"] = settings.SMTP_PASSWORD
-    response = message.send(to=email_to, render=environment, smtp=smtp_options, mail_from=("Molar", "test@molar.tooth"))
+    response = message.send(
+        to=email_to,
+        render=environment,
+        smtp=smtp_options,
+        mail_from=("Molar", "test@molar.tooth"),
+    )
     logging.info(f"send email result: {response}")
 
 
@@ -68,8 +75,7 @@ def send_reset_password_email(email_to: str, name: str, token: str) -> None:
 
 
 def send_new_account_email(email_to: str, username: str, password: str) -> None:
-    project_name = settings.PROJECT_NAME
-    subject = f"{project_name} - New account for user {username}"
+    subject = f"Molar - New account for user {username}"
     with open(Path(settings.EMAIL_TEMPLATES_DIR) / "new_account.html") as f:
         template_str = f.read()
     link = settings.SERVER_HOST
@@ -78,7 +84,7 @@ def send_new_account_email(email_to: str, username: str, password: str) -> None:
         subject_template=subject,
         html_template=template_str,
         environment={
-            "project_name": settings.PROJECT_NAME,
+            "project_name": "Molar",
             "username": username,
             "password": password,
             "email": email_to,

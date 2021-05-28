@@ -3,6 +3,8 @@ services:
   backend:
     image: "matterlab/molar:latest"
     restart: always
+    depends_on:
+      - postgres
     healthcheck:
       test: ["CMD", "curl", "-f", "http://backend:$BACKEND_PORT"]
       timeout: 30s
@@ -10,7 +12,7 @@ services:
       retries: 10
     ports:
       - "$BACKEND_PORT:$BACKEND_PORT"
-    volumnes:
+    volumes:
       - "$DATA_DIR/migrations:/alembic"
     environment:
       - POSTGRES_SERVER=$POSTGRES_SERVER
@@ -29,7 +31,7 @@ services:
     image: "postgres:13"
     restart: always
     healthcheck:
-      test: ["CMD", "pg_isready", "-q"]
+      test: ["CMD", "pg_isready", "-q", "-U", "$POSTGRES_USER"]
       timeout: 45s
       interval: 10s
       retries: 10

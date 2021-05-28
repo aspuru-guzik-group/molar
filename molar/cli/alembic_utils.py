@@ -1,21 +1,28 @@
-import pkg_resources
+# std
+from typing import Optional
+
+# external
 from alembic import util
 from alembic.config import Config
 from alembic.script import ScriptDirectory
+import pkg_resources
 
-from ..config import ClientConfig
+from .cli_utils import load_config
 
 GLOBAL_VERSION_PATH = pkg_resources.resource_filename("molar", "migrations/versions")
 
 
-def get_alembic_config(cfg: ClientConfig):
+def get_alembic_config(ctx, database: Optional[str] = None):
+    load_config(ctx, database=database)
+    data_dir = ctx.obj["data_dir"]
+    sql_url = ctx.obj["sql_url"]
     alembic_config = Config()
     version_locations = GLOBAL_VERSION_PATH
-    if cfg.user_dir:
-        version_locations = version_locations + " " + str(cfg.user_dir / "migrations")
+    if data_dir:
+        version_locations = version_locations + " " + str(data_dir / "migrations")
     alembic_config.set_main_option("version_locations", version_locations)
     alembic_config.set_main_option("script_location", "molar:migrations")
-    alembic_config.set_main_option("sqlalchemy.url", cfg.sql_url)
+    alembic_config.set_main_option("sqlalchemy.url", sql_url)
     return alembic_config
 
 

@@ -1,7 +1,9 @@
+# std
 from typing import Dict
 
-import sqlalchemy
+# external
 from pydantic import PostgresDsn
+import sqlalchemy
 
 from ..core.config import settings
 from .database_handler import DatabaseHandler

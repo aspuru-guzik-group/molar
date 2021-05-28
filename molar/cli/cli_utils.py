@@ -1,6 +1,11 @@
+# std
+from pathlib import Path
 from typing import Any, List, Optional, Union
 
+# external
 import click
+from dotenv import dotenv_values
+from pydantic import PostgresDsn
 from rich import traceback
 from rich.console import Console
 
@@ -29,3 +34,38 @@ def handle_exception(console: Console, info_name: str):
         )
     )
     exit(1)
+
+
+def load_config(
+    ctx,
+    database: Optional[str],
+    data_dir: Optional[Path] = None,
+    env_file: Optional[Path] = None,
+):
+    console = ctx.obj["console"]
+    if data_dir is None and ctx.obj["data_dir"] is None:
+        data_dir = Path("./")
+    else:
+        data_dir = ctx.obj["data_dir"]
+    if env_file is None and ctx.obj["env_file"] is None:
+        env_file = data_dir / ".env"
+    else:
+        env_file = ctx.obj["env_file"]
+
+    if database is None and ctx.obj["database"] is not None:
+        database = ctx.obj["database"]
+
+    if not env_file.exists():
+        raise ValueError(
+            ".env file not found. Please specifiy --data-dir or --env-file"
+        )
+
+    config = dotenv_values(env_file)
+    ctx.obj["env"] = config
+    ctx.obj["sql_url"] = PostgresDsn.build(
+        scheme="postgresql",
+        host=config["POSTGRES_SERVER"],
+        user=config["POSTGRES_USER"],
+        password=config["POSTGRES_PASSWORD"],
+        path=f"/{database or ''}",
+    )

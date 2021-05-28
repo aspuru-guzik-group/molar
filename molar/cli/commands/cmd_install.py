@@ -1,22 +1,29 @@
+# std
 import configparser
-import random
-import string
 from datetime import datetime
 from distutils.spawn import find_executable
+import os
+from pathlib import Path
+import random
+import shutil
+import stat
+import string
 from time import sleep
 from typing import List, Optional
 
-import click
-import docker
+# external
 from alembic import command
-from molar import sql_utils
+import click
 from passlib.context import CryptContext
+import pkg_resources
+from python_on_whales import docker, DockerClient
 from rich.console import Console
 from rich.prompt import Confirm, Prompt
-from time import sleep
-from .. import alembic_utils
 
-# from .. import sql_utils
+# molar
+from molar import sql_utils
+
+from .. import alembic_utils
 from ..cli_utils import CustomClickCommand
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -25,56 +32,86 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 @click.group(help="Molar Installation")
 @click.pass_context
 def install(ctx):
-    ctx.obj["alembic_config"] = alembic_utils.get_alembic_config(
-        ctx.obj["client_config"]
-    )
     pass
 
 
-
-def backend_setup():
-    Console.log('[blue bold]Setting up backend environment..')
-
-    env_vars = {}    
-    env_vars['POSTGRES_SERVER'] = Prompt.ask('Enter postgres server name', default ='molar_main')
-    env_vars['POSTGRES_USER'] = Prompt.ask('Enter potgres user', default = 'postgres')
-
-    env_vars['DATA_DIR'] = Prompt.ask('Postgres data directory')
-
-    env_vars['EMAILS_FROM_EMAIL'] = Prompt.ask('If you would like to set up the backend email enter it now, otherwise leave blank.', default='')
-    if env_vars['EMAILS_FROM_EMAIL'] is not '':
-        env_vars['env_vars'] = Prompt.ask('Enter name of user to send the emails from:')
-        env_vars['EMAILS_ENABLED'] =True
-     
-     #TODO do we want to do this?
-     with open('test.env','w') as f:
-         for key,val in env_vars:
-             print(f'{key}={val}', file=f)
-    return env_vars
-
-@install.command(cls=CustomClickCommand, help="Spin up Molar locally with docker")
-@click.option(
-    "--postgres-password", prompt="Chose a password for postgres user", hide_input=True
-)
-@click.option(
-    "--container-name",
-    type=str,
-    default="molar-pgsql",
-    help="Name of the docker container (default: molar-pgsql)",
-)
-@click.option("--superuser-name", type=str, default=None)
-@click.option("--superuser-email", type=str, default=None)
-@click.option("--superuser-password", type=str, default=None)
-@click.pass_context
-def local(
-    ctx,
-    postgres_password,
-    container_name,
-    superuser_name,
-    superuser_email,
-    superuser_password,
+def config_env_vars(
+    console: Console,
+    data_dir: Path,
+    *,
+    postgres_server: Optional[str] = None,
+    postgres_user: Optional[str] = None,
+    postgres_password: Optional[str] = None,
+    server_host: Optional[str] = None,
+    emails_enabled: Optional[bool] = None,
+    smtp_tls: Optional[bool] = None,
+    smtp_host: Optional[str] = None,
+    smtp_user: Optional[str] = None,
+    smtp_password: Optional[str] = None,
+    emails_from_email: Optional[str] = None,
+    emails_from_name: Optional[str] = None,
+    backend_port: Optional[int] = None,
+    backend_num_workers: Optional[int] = None,
 ):
-    
+    console.log("[blue bold]Setting up backend environment..")
+
+    if postgres_server is None:
+        postgres_server = Prompt.ask("PostgreSQL server hostname", default="localhost")
+    if postgres_user is None:
+        postgres_user = Prompt.ask("PostgreSQL user", default="postgres")
+    if postgres_password is None:
+        postgres_password = Prompt.ask(f"Password for Postgres admin", password=True)
+    if server_host is None:
+        server_host = Prompt.ask(f"Server url", default="http://localhost")
+    if emails_enabled is None:
+        emails_enabled = Confirm.ask("Allow the backend to send email?")
+    if emails_enabled:
+        if smtp_host is None:
+            smtp_host = Prompt.ask("SMTP server")
+        if smtp_user is None:
+            smtp_user = Prompt.ask("SMTP user")
+        if smtp_password is None:
+            smtp_password = Prompt.ask("SMTP password", password=True)
+        if smtp_tls is None:
+            smtp_tls = Confirm.ask("Use TLS to connect to the SMTP server?")
+        if emails_from_email is None:
+            emails_from_email = Prompt.ask("Email address of the bakcend")
+        if emails_from_name is None:
+            emails_from_name = Prompt.ask("Email name of the backend")
+    if backend_port is None:
+        backend_port = Prompt.ask("Backend port", default="8000")
+    if backend_num_workers is None:
+        backend_num_workers = Prompt.ask(
+            "Number of workers for the backend", default="2"
+        )
+
+    dotenv_file = (data_dir / ".env").resolve()
+    with open(dotenv_file, "w") as f:
+        print(f"DATA_DIR={data_dir.resolve()}", file=f)
+        print(f"POSTGRES_SERVER={postgres_server}", file=f)
+        print(f"POSTGRES_USER={postgres_user}", file=f)
+        print(f"POSTGRES_PASSWORD={postgres_password}", file=f)
+        print(f"SERVER_HOST={server_host}", file=f)
+        print(f"EMAILS_ENBALED={emails_enabled}", file=f)
+        if emails_enabled:
+            print(f"SMTP_TLS={smtp_tls or False}", file=f)
+            print(f"SMTP_HOST={smtp_host or ''}", file=f)
+            print(f"SMTP_USER={smtp_user or ''}", file=f)
+            print(f"SMTP_PASSWORD={smtp_password or ''}", file=f)
+            print(f"EMAILS_FROM_EMAIL={emails_from_email or 'noreply@molar'}", file=f)
+            print(f"EMAILS_FROM_NAME={emails_from_name or ''}", file=f)
+        print(f"BACKEND_PORT={backend_port}", file=f)
+        print(f"BACKEND_NUM_WORKERS={backend_num_workers}", file=f)
+        print(f"ALEMBIC_USER_DIR=/alembic", file=f)
+    os.chmod(dotenv_file, stat.S_IREAD)
+    return locals()
+
+
+@install.command(
+    cls=CustomClickCommand, help="Install Molar locally with docker compose"
+)
+@click.pass_context
+def local(ctx):
     console = ctx.obj["console"]
     if not find_executable("docker"):
         console.log(
@@ -84,49 +121,51 @@ def local(
             )
         )
         return
-    _verify_user_dir(ctx)
-    client = docker.DockerClient()
 
-    try:
-        container = client.containers.get(container_name)
-    except docker.errors.NotFound:
-        _start_docker_container(ctx, client, container_name, postgres_password)
-        container = client.containers.get(container_name)
+    _verify_data_dir(ctx)
+    data_dir = ctx.obj["data_dir"]
 
-    if container.status != "running":
-        container.start()
-
-    with console.status("Starting database..."):
-        while (
-            not "database system is ready to accept connections"
-            in container.logs().decode()
-        ):
+    config = config_env_vars(
+        console,
+        data_dir,
+        postgres_server="postgres",
+        postgres_user="postgres",
+    )
+    molar_docker_compose = pkg_resources.resource_filename(
+        "molar", "docker/docker-compose.yml"
+    )
+    local_docker_compose = data_dir / "docker-compose.yml"
+    shutil.copyfile(molar_docker_compose, local_docker_compose)
+    os.chdir(data_dir)
+    with console.status("Setting up PostgreSQL (this can take a few minutes)..."):
+        docker.compose.up(services=["postgres"], detach=True)
+        while not docker.compose.ps()[0].state.health.status == "healthy":
             sleep(1)
-
     sleep(2)
-    _install_molar(ctx, "localhost", "postgres", postgres_password)
 
-    console.log("Creating the first user!")
-    if superuser_name is None:
-        superuser_email = Prompt.ask("Name")
-    if superuser_email is None:
-        superuser_email = Prompt.ask("Email")
-    if superuser_password is None:
-        superuser_password = Prompt.ask("Password", password=True)
-    
-    env_vars = backend_setup()
+    console.log("Installing Molar...")
+    _install_molar(ctx, "localhost", "postgres", config["postgres_password"])
+
+    console.log("[bold blue]Creating the first superuser[/bold blue]")
+    superuser_name = Prompt.ask("Full name")
+    superuser_email = Prompt.ask("Email")
+    superuser_password = Prompt.ask("Password", password=True)
+
     _add_user(
         user_name=superuser_name,
         email=superuser_email,
         password=superuser_password,
         hostname="localhost",
-        postgres_username=env_vars['POSTGRES_USER'],
-        postgres_password=postgres_password,
+        postgres_username="postgres",
+        postgres_password=config["postgres_password"],
         postgres_database="molar_main",
     )
-    
 
     console.log("Molar :tooth: is insalled!")
+    if Confirm.ask("Do you want to start it now?"):
+        docker.compose.up(detach=True)
+    else:
+        docker.compose.down()
 
 
 @install.command(cls=CustomClickCommand, help="Set up remote postgres database")
@@ -223,62 +262,28 @@ def _add_user(
     )
 
 
-@install.command(
-    cls=CustomClickCommand, help="Create a new database on a postgresql server"
-)
-@click.option("--hostname", type=str, prompt="Database hostname")
-@click.option("--postgres-username", type=str, default="postgres")
-@click.option(
-    "--postgres-password", type=str, prompt="Postgres password", hide_input=True
-)
-@click.option("--new-database-name", type=str, prompt="Name of the new database")
-@click.option("--advanced", is_flag=True)
-@click.pass_context
-def create_database(
-    ctx, hostname, postgres_username, postgres_password, new_database_name, advanced
-):
-    _verify_user_dir(ctx)
-    _create_database(
-        ctx, hostname, postgres_username, postgres_password, new_database_name, advanced
-    )
-
-
-def _start_docker_container(
-    ctx, client: docker.DockerClient, container_name: str, postgres_password=None
-):
-    if postgres_password is None:
-        Prompt.ask("Enter a password for postgres user:", password=True)
-    client.containers.run(
-        "tgaudin/postgresql-pgtap",
-        name=container_name,
-        environment={
-            "ALEMBIC_USER_DIR": "/var/lib/molar/migrations",
-            "POSTGRES_PASSWORD": postgres_password,
-        },
-        detach=True,
-        ports={"5432/tcp": 5432},
-        volumes={
-            "/var/lib/postgresql/data": {
-                "bind": str((ctx.obj["client_config"].user_dir / "data").resolve()),
-                "mode": "rw",
-            },
-            "/var/lib/molar/migrations": {
-                "bind": str(
-                    (ctx.obj["client_config"].user_dir / "migrations").resolve()
-                ),
-                "mode": "rw",
-            },
-        },
-    )
-
-
-def _verify_user_dir(ctx):
+def _verify_data_dir(ctx):
     console = ctx.obj["console"]
-    if getattr(ctx.obj["client_config"], "user_dir", None) is None:
-        console.log(
-            "[red bold]You must specify a user-dir for this operation![/red bold]"
+    data_dir = ctx.obj["data_dir"]
+    if data_dir is None:
+        console.log("[blue bold]No data-dir where specified![/blue bold]")
+        data_dir = Path(
+            Prompt.ask(
+                "Where do you want to install Molar :tooth:", default="./molar_data_dir"
+            )
         )
-        exit(1)
+
+    if not data_dir.exists():
+        data_dir.mkdir()
+
+    alembic_dir = data_dir / "migrations"
+    if not alembic_dir.exists():
+        alembic_dir.mkdir()
+
+    postgres_dir = data_dir / "postgres"
+    if not postgres_dir.exists():
+        postgres_dir.mkdir()
+    ctx.obj["data_dir"] = data_dir.resolve()
 
 
 def _create_database(
@@ -295,7 +300,7 @@ def _create_database(
         postgres_username, postgres_password, hostname, new_database_name
     )
 
-    alembic_config = ctx.obj["alembic_config"]
+    alembic_config = alembic_utils.get_alembic_config(ctx, database="molar_main")
     alembic_config.set_main_option(
         "sqlalchemy.url",
         (

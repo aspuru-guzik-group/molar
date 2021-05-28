@@ -1,25 +1,29 @@
 #!/bin/sh
 
 POSTGRES_SERVER=${POSTGRES_SERVER:-localhost}
-POSTGRES_USER=${POSTGRES_USER:-postgers}
+POSTGRES_USER=${POSTGRES_USER:-postgres}
 POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-}
+EMAILS_FROM_EMAIL=${EMAILS_FROM_EMAIL:-dummy@molar.com}
+SMTP_TLS=${SMTP_TLS:-false}
 BACKEND_NUM_WORKERS=${BACKEND_NUM_WORKERS:-2}
 BACKEND_PORT=${BACKEND_PORT:-8000}
 
 export PGPASSWORD=$POSTGRES_PASSWORD
 
 MAX_RETRIES=10
+N_RETRY=1
 while ! pg_isready -q -h $POSTGRES_SERVER; do
+  echo "Could not connect to the database, retrying in a few seconds"
   sleep 5
-  MAX_RETRIES=$((MAX_RETRIES - 1))
-  if [[ MAX_RETRIES -eq 0 ]]; then
-    echo "Could not connect to database"
+  N_RETRY=$(($N_RETRY + 1))
+  if [[ $N_RETRY -eq $MAX_RETRIES ]]; then
+    echo "Could not connect to database! Please check your configuration!"
     exit
   fi
 
 done
 
-DATABASES=$(psql -h localhost -U postgres -l | grep UTF8 | awk '{print $1}')
+DATABASES=$(psql -h localhost -U $POSTGRES_USER -l | grep UTF8 | awk '{print $1}')
 
 if ! echo $DATABASES | grep -w -q molar_main > /dev/null; then 
   molarcli install remote \
