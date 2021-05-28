@@ -3,6 +3,8 @@ data/
 db.conf
 _mdb/
 test.env
+db/
+db/postgres
 # Created by https://www.gitignore.io/api/vim,emacs,linux,macos,python,pycharm,windows,sublimetext
 # Edit at https://www.gitignore.io/?templates=vim,emacs,linux,macos,python,pycharm,windows,sublimetext
 

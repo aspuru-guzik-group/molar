@@ -31,6 +31,27 @@ def install(ctx):
     pass
 
 
+
+def backend_setup():
+    Console.log('[blue bold]Setting up backend environment..')
+
+    env_vars = {}    
+    env_vars['POSTGRES_SERVER'] = Prompt.ask('Enter postgres server name', default ='molar_main')
+    env_vars['POSTGRES_USER'] = Prompt.ask('Enter potgres user', default = 'postgres')
+
+    env_vars['DATA_DIR'] = Prompt.ask('Postgres data directory')
+
+    env_vars['EMAILS_FROM_EMAIL'] = Prompt.ask('If you would like to set up the backend email enter it now, otherwise leave blank.', default='')
+    if env_vars['EMAILS_FROM_EMAIL'] is not '':
+        env_vars['env_vars'] = Prompt.ask('Enter name of user to send the emails from:')
+        env_vars['EMAILS_ENABLED'] =True
+     
+     #TODO do we want to do this?
+     with open('test.env','w') as f:
+         for key,val in env_vars:
+             print(f'{key}={val}', file=f)
+    return env_vars
+
 @install.command(cls=CustomClickCommand, help="Spin up Molar locally with docker")
 @click.option(
     "--postgres-password", prompt="Chose a password for postgres user", hide_input=True
@@ -53,6 +74,7 @@ def local(
     superuser_email,
     superuser_password,
 ):
+    
     console = ctx.obj["console"]
     if not find_executable("docker"):
         console.log(
@@ -91,16 +113,18 @@ def local(
         superuser_email = Prompt.ask("Email")
     if superuser_password is None:
         superuser_password = Prompt.ask("Password", password=True)
-
+    
+    env_vars = backend_setup()
     _add_user(
         user_name=superuser_name,
         email=superuser_email,
         password=superuser_password,
         hostname="localhost",
-        postgres_username="postgres",
+        postgres_username=env_vars['POSTGRES_USER'],
         postgres_password=postgres_password,
         postgres_database="molar_main",
     )
+    
 
     console.log("Molar :tooth: is insalled!")
 

@@ -22,4 +22,4 @@ if ! echo $DATABASES | grep -w -q molar_main > /dev/null; then
     --postgres-password $POSTGRES_PASSWORD 
 fi
 
-uvicorn molar.backend.main:app
+uvicorn --port 8000 molar.backend.main:app 
