@@ -23,14 +23,6 @@ while ! pg_isready -q -h $POSTGRES_SERVER; do
 
 done
 
-DATABASES=$(psql -h localhost -U $POSTGRES_USER -l | grep UTF8 | awk '{print $1}')
-
-if ! echo $DATABASES | grep -w -q molar_main > /dev/null; then 
-  molarcli install remote \
-    --hostname $POSTGRES_SERVER \
-    --postgres-username $POSTGRES_USER \
-    --postgres-password $POSTGRES_PASSWORD 
-fi
 
 uvicorn \
   --workers $BACKEND_NUM_WORKERS \
