@@ -1,13 +1,11 @@
 # std
-import configparser
 from datetime import datetime
 from distutils.spawn import find_executable
 import os
 from pathlib import Path
-import random
+import secrets
 import shutil
 import stat
-import string
 from time import sleep
 from typing import List, Optional
 
@@ -16,7 +14,7 @@ from alembic import command
 import click
 from passlib.context import CryptContext
 import pkg_resources
-from python_on_whales import docker, DockerClient
+from python_on_whales import docker
 from rich.console import Console
 from rich.prompt import Confirm, Prompt
 
@@ -103,6 +101,7 @@ def config_env_vars(
         print(f"BACKEND_PORT={backend_port}", file=f)
         print(f"BACKEND_NUM_WORKERS={backend_num_workers}", file=f)
         print(f"ALEMBIC_USER_DIR=/alembic", file=f)
+        print(f"SECRET_KEY={secrets.token_urlsafe(32)}")
     os.chmod(dotenv_file, stat.S_IREAD)
     return locals()
 
