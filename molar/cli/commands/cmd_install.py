@@ -179,9 +179,15 @@ def local(ctx):
 
     console.log("Molar :tooth: is insalled!")
     if Confirm.ask("Do you want to start it now?"):
-        docker.compose.up(detach=True)
+        try:
+            docker.compose.up(detach=True)
+        except DockerException:
+            subprocess.call("docker-compose up -d", shell=True)
     else:
-        docker.compose.down()
+        try:
+            docker.compose.down()
+        except DockerException:
+            subprocess.call("docker-compose down", shell=True)
 
 
 @install.command(cls=CustomClickCommand, help="Set up remote postgres database")
