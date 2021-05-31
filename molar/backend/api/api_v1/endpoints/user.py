@@ -20,6 +20,8 @@ from molar.backend.utils import (
     send_reset_password_email,
     verify_password_reset_token,
 )
+from pydantic import EmailStr
+from sqlalchemy.orm import Session
 
 from ... import deps
 
@@ -132,7 +134,7 @@ def deactivate_user(
     if not db_obj:
         raise HTTPException(status_code=404, detail="User not found")
     crud.user.deactivate(db, db_obj=db_obj)
-    return {"msg": f"User {email} is now desactivated!"}
+    return {"msg": f"User {email} is now deactivated!"}
 
 
 @router.patch("/", response_model=schemas.User)

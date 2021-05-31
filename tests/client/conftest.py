@@ -11,7 +11,7 @@ from molar import Client, ClientConfig
 
 def client_factory(database_name="molar_main"):
     cfg = ClientConfig(
-        server_url=os.getenv("SERVER_HOST") or "http://localhost",
+        server_url=os.getenv("SERVER_HOST") or "http://localllllllhost:",
         api_prefix=os.getenv("API_PATH") or "/api/v1",
         database_name=database_name,
         username="test@molar.tooth",
