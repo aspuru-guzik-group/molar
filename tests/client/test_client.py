@@ -17,6 +17,9 @@ class TestClientLogin:
     def test_test_token(self, client):
         client.test_token()
 
+    def test_login_other_database(self, new_database_client):
+        new_database_client.test_token()
+
 
 class TestClientDatabase:
     def test_get_database_requests(self, client):
