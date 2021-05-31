@@ -5,9 +5,10 @@ Revises: bf3c5d811155
 Create Date: 2021-05-26 09:19:46.953180
 
 """
+# external
+from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql as pgsql
-from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "311e0c050706"
@@ -31,12 +32,13 @@ def upgrade():
     op.create_table(
         "molar_database",
         sa.Column("id", sa.Integer),
-        sa.Column("database_name", sa.Text, unique=True, index=True, nullable=False),
+        sa.Column("database_name", sa.Text, nullable=False),
         sa.Column("superuser_fullname", sa.Text, nullable=False),
         sa.Column("superuser_email", sa.Text, nullable=False),
         sa.Column("superuser_password", sa.Text, nullable=False),
         sa.Column("alembic_revisions", pgsql.ARRAY(sa.Text), nullable=False),
         sa.Column("is_approved", sa.Boolean, default=False),
+        sa.UniqueConstraint("database_name"),
     )
 
     op.execute(
