@@ -1,24 +1,8 @@
-![test](https://gitlab.com/tgaudin/goldmine/badges/master/pipeline.svg) ![coverage](https://gitlab.com/tgaudin/goldmine/badges/master/coverage.svg)
+![test](https://gitlab.com/tgaudin/goldmine/badges/%{default_branch}/pipeline.svg) ![coverage](https://gitlab.com/tgaudin/goldmine/badges/%{default_branch}/coverage.svg)
 
-# Madness DB
+# Molar :tooth:
 
-Madness DB is a database meant to hold all data created by the madness project.
-
-This repo contains the code of the python client and all the backend-side code.
-Here is an overview of how it's organized:
-
-
-```
-├── docs                    -- documentation src dir
-├── mdb                     -- client source code
-├── migrations              -- database migration code (alembic base dir)
-├── pgsql                   -- code for the database
-├── tests                   -- unit test for the client
-├── README.md               -- this file
-├── docker-compose.yml      -- to spin up the db locally
-├── setup.cfg
-└── setup.py
-```
+Molar is a database management system that aims to make it easy to handle chemical data.
 
 ## Installing the client
 
@@ -26,55 +10,21 @@ If you have git and python installed, it's as easy as:
 
 ```bash
 $ git clone git@gitlab.com:tgaudin/goldmine.git
-$ cd goldmine && pip install -e .
+cd goldmine && pip install -e .
 ```
 
 ## Using the client
 
-A more complete documentation is available [here](http://www.cs.toronto.edu/~tgaudin/madnessdb/)
-(user: `madness`, pw: `darpa-madness`)
 
-If you are in the matterlab's network:
+## Backend
 
-```python
-from mdb import MDBClient
+To run the backend there are two possibilities: either run the docker image we prepared or install it directly on the machine. 
 
-client = MDBClient(hostname='mdb.matter.sandbox', 
-                   username='postgres', 
-                   password='',
-                   database='madness')
+The first options is easier, but the second options will give you more flexibility in term of configuration and infrastructure.
 
-client.get('molecule')
+### Installing the backend with Docker
+...
 
-```
+### Installing the backend without Docker
 
-If you are not in the matterlab's network
-
-```python
-from mdb import MDBClientWithSSH
-
-client = MDBClientWithSSH(hostname='localhost',
-                          username='postgres',
-                          password='',
-                          database='madness',
-                          ssh_hostname='cs.toronto.edu',
-                          ssh_username='username@cs.toronto.edu',
-                          ssh_keyfile='path/to/the/ssh/key',
-                          ssh_tunnel_hostname='mdb.matter.sandbox')
-
-client.get('molecule')
-```
-
-Alternatively, if you have a config file you can just do:
-
-```python
-import mdb
-
-client = mdb.load_client_from_config('path/to/config_file.conf')
-
-client.get('molecule')
-```
-
-## Documentation
-
-It's [here](http://www.cs.toronto.edu/~tgaudin/madnessdb/) (user: `madness`, pw: `darpa-madness`)
+...

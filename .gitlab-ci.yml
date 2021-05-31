@@ -1,103 +1,35 @@
 stages:
   - test
-  - doc
 
 services:
   - tgaudin/postgresql-pgtap:latest
 
 variables:
     POSTGRES_HOST_AUTH_METHOD: trust
-
-test-client:
-    stage: test
-    when: always
-    image: continuumio/miniconda3:latest
-    variables:
-        DB_HOST: "tgaudin-postgresql-pgtap"
-        DB_USER: "postgres"
-        PGPASSWORD: ""
-        DB_NAME: "mdb"
-    before_script:
-      - conda create -n mdb python=3.6
-      - source activate mdb
-      - apt-get update
-      - apt-get upgrade -y
-      - apt-get install -y postgresql-client libxrender1
-      - ./pgsql/setup.sh
-      - pip install coverage pytest alembic
-      - python setup.py install
-      - alembic -c tests/alembic.ini.test upgrade head
-    script:
-      - python setup.py test
-      - coverage run --source mdb -m py.test
-      - coverage report
+    POSTGRES_PASSWORD: "tooth"
 
 test-backend:
     stage: test
     when: always
-    image: 'alpine:3.7'
+    image: continuumio/miniconda3:latest
     variables:
-        DB_HOST: "tgaudin-postgresql-pgtap"
-        DB_USER: "postgres"
-        PGPASSWORD: ""
-        DB_NAME: "mdb"
+        PROJECT_NAME: "Test Molar"
+        SERVER_NAME: "localhost"
+        SERVER_HOST: "http://localhost"
+        POSTGRES_SERVER: "tgaudin-postgresql-pgtap"
+        POSTGRES_USER: "postgres"
+        POSTGRES_PASSWORD: "tooth"
     before_script:
-      - apk update 
-      - apk upgrade
-      - apk add --no-cache bash
-      - apk add --no-cache --virtual=build-dependencies unzip
-      - apk add --no-cache wget python3 python3-dev
-      - apk add --no-cache postgresql-dev postgresql-client
-      - apk add --no-cache gcc musl-dev build-base perl-dev
-      - python3 -m ensurepip
-      - pip3 install --upgrade pip setuptools
-      - rm -r /usr/lib/python*/ensurepip
-      - if [ ! -e /usr/bin/pip ]; then ln -s pip3 /usr/bin/pip ; fi 
-      - if [[ ! -e /usr/bin/python ]]; then ln -sf /usr/bin/python3 /usr/bin/python; fi 
-      - wget 'http://api.pgxn.org/dist/pgtap/1.1.0/pgtap-1.1.0.zip' -q
-      - unzip pgtap-1.1.0.zip
-      - cd pgtap-1.1.0 && make && make install
-      - cpan TAP::Parser::SourceHandler::pgTAP
-      - pip install alembic psycopg2-binary
-      - cd .. && ./pgsql/setup.sh
-      - alembic -c tests/alembic.ini.test upgrade head
-      - psql -h ${DB_HOST} -U ${DB_USER} -d ${DB_NAME} -c 'create extension if not exists pgtap';
+      - conda create -n molar python=3.7
+      - source activate molar
+      - apt-get update
+      - apt-get upgrade -y
+      - apt-get install -y postgresql-client libxrender1
+      - pip install coverage pytest alembic
+      - pip install -e .[backend]
+      - pip install -e .[test]
+      - molarcli --user-dir db install remote --hostname tgaudin-postgresql-pgtap --postgres-username postgres --postgres-password tooth --superuser-email test@molar.tooth --superuser-password tooth
     script:
-      - pg_prove --dbname ${DB_NAME} pgsql/tests/test_eventsourcing.sql -h ${DB_HOST} -U ${DB_USER}
- 
-
-schemacrawler:
-    stage: doc
-    when: always
-    image: 'alpine:3.7'
-    variables:
-        DB_HOST: "tgaudin-postgresql-pgtap"
-        DB_USER: "postgres"
-        PGPASSWORD: ""
-        DB_NAME: "mdb"
-    before_script:
-      - apk update 
-      - apk upgrade
-      - apk add --no-cache bash
-      - apk add --no-cache --virtual=build-dependencies unzip
-      - apk add --no-cache curl wget openjdk8-jre python3 python3-dev
-      - apk add --no-cache graphviz postgresql-dev postgresql-client
-      - apk add --no-cache gcc musl-dev bash
-      - python3 -m ensurepip
-      - pip3 install --upgrade pip setuptools
-      - rm -r /usr/lib/python*/ensurepip
-      - if [ ! -e /usr/bin/pip ]; then ln -s pip3 /usr/bin/pip ; fi 
-      - if [[ ! -e /usr/bin/python ]]; then ln -sf /usr/bin/python3 /usr/bin/python; fi 
-      - rm -r /root/.cache
-      - wget https://github.com/schemacrawler/SchemaCrawler/releases/download/v15.06.01/schemacrawler-15.06.01-distribution.zip
-      - unzip schemacrawler-15.06.01-distribution.zip
-      - pip install alembic psycopg2-binary
-      - /bin/bash ./pgsql/setup.sh
-      - alembic -c tests/alembic.ini.test upgrade head
-    script:
-      - ./schemacrawler-15.06.01-distribution/_schemacrawler/schemacrawler.sh -server=postgresql -user=${DB_USER} -host=${DB_HOST} -database=${DB_NAME} -password=${PGPASSWORD} -c=schema -fmt=scdot -o=./schema.graphviz
-      - dot -Tpng ./schema.graphviz -o ./schema.png
-    artifacts:
-      paths:
-      - ./schema.graphviz
-      - ./schema.png
+      - pytest
+      - coverage run --source molar -m py.test
+      - coverage report
