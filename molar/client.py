@@ -16,6 +16,7 @@ from rich.logging import RichHandler
 
 # molar
 import molar
+from molar.backend import schemas
 
 from .client_config import ClientConfig
 from .exceptions import MolarBackendError
@@ -134,13 +135,9 @@ class Client:
         )
 
     def recover_password(self, email: EmailStr):
-        # static method because client object cant be created without a password
-        # no header because it is a static method
         return self.request(f"/password-recovery/{email}", method="POST")
 
     def reset_password(self, token: str, new_password: str):
-        # static method because client object cant be created without a password
-        # no header beaause it is a static method
         data = {
             "token": token,
             "new_password": new_password,
@@ -169,6 +166,13 @@ class Client:
         return self.request(
             "/database/requests",
             method="GET",
+            headers=self.headers,
+            return_pandas_dataframe=return_pandas_dataframe,
+        )
+    
+    def get_database_information(self, return_pandas_dataframe=True):
+        return self.request(
+            "/database/information",
             headers=self.headers,
             return_pandas_dataframe=return_pandas_dataframe,
         )
@@ -264,10 +268,35 @@ class Client:
             return_pandas_dataframe=True,
         )
 
+    
     """
     QUERYING RELATED ACTIONS
     """
-
+    def query_multiple_joins_filters(
+        self,
+        database_name: str,
+        type: Union[str, List[str]],
+        limit: Optional[int],
+        offset: Optional[int],
+        joins: Optional[Union[List[schemas.QueryJoin], schemas.QueryJoin]],
+        filters: Optional[Union[schemas.QueryFilter, schemas.QueryFilterList]],
+        order_by: Optional[str],
+    ):
+        json = {
+            "type": type,
+            "limit": limit,
+            "offset": offset,
+            "joins": joins,
+            "filter": filters,
+            "order_by": order_by,
+        }
+        return self.request(
+            f"/query/{database_name}",
+            method="GET",
+            headers=self.headers,
+            return_pandas_dataframe=True,
+        )
+    
     def query_database(
         self,
         database_name: str,
@@ -363,6 +392,15 @@ class Client:
             "/user/get-users",
             method="GET",
             headers=self.headers,
+            return_pandas_dataframe=True,
+        )
+
+    def get_user_by_email(self, email:EmailStr):
+        return self.request(
+            f"/user/{email}",
+            method="GET",
+            headers=self.headers,
+            return_pandas_dataframe=True,
         )
 
     def add_user(
@@ -384,28 +422,55 @@ class Client:
             "joined_on": datetime.now(),
         }
         # check if current user is superuser is in backend
-        response = self.request(
-            "/user/add-users",
+        return self.request(
+            "/user/add",
+            json=user_create_model,
             method="POST",
-            data=user_create_model,
             headers=self.headers,
         )
-        if response:
-            return f"The user {email} has been created!"
-        else:
-            return f"The user {email} hasn't been created."
-
-    def get_user_by_id(self, id: int):
+    
+    def register_user(
+        self,
+        email: EmailStr,
+        password: str,
+        full_name: str,
+    ):
+        user_register_model = {
+            "full_name": full_name,
+            "email": email,
+            "password": password
+        }
         return self.request(
-            f"/user/{id}",
-            method="GET",
+            "/user/register",
+            json=user_register_model,
+            method="POST",
             headers=self.headers,
-            return_pandas_dataframe=True,
+        )
+    
+    def activate_user(
+        self,
+        email: EmailStr,
+    ):
+        return self.request(
+            "/user/activate",
+            method="PATCH",
+            params={"email": email},
+            headers=self.headers,
+        )
+    
+    def deactivate_user(
+        self,
+        email: EmailStr,
+    ):
+        return self.request(
+            "/user/deactivate",
+            method="PATCH",
+            params={"email": email},
+            headers=self.headers,
         )
 
     def update_user(
         self,
-        id: int,
         password: Optional[str] = None,
         organization: Optional[str] = None,
         is_active: Optional[bool] = True,
@@ -420,11 +485,22 @@ class Client:
             "full_name": full_name,
         }
         return self.request(
-            f"/user/{id}",
-            method="PUT",
+            "/user/",
+            method="PATCH",
             data=user_update_model,
             headers=self.headers,
             return_pandas_dataframe=True,
+        )
+    
+    def delete_user(
+        self,
+        email: EmailStr
+    ):
+        return self.request(
+            "/user/",
+            method="DELETE",
+            params={"email": email},
+            headers=self.headers
         )
 
     """

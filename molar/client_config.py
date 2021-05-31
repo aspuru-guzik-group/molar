@@ -4,9 +4,6 @@ from dataclasses import asdict, dataclass
 import os
 from typing import Any, Dict, Optional
 
-# molar
-from molar import config
-
 
 @dataclass
 class ClientConfig:
@@ -31,7 +28,7 @@ class ClientConfig:
 
         if not (section_name in parser):
             raise ValueError(
-                f"Section{section_name} could not be found in the config file."
+                f"Section {section_name} could not be found in the config file."
             )
 
         return ClientConfig(**parser[section_name], database_name=section_name)

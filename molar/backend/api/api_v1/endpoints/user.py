@@ -102,7 +102,7 @@ def register_a_new_user(
     except sqlalchemy.exc.IntegrityError:
         raise HTTPException(status_code=401, detail="This username is already taken.")
     return {
-        "msg": f"User {user_in.email} has been register. Ask your database admin to activate this account"
+        "msg": f"User {user_in.email} has been registered. Ask your database admin to activate this account."
     }
 
 
@@ -155,7 +155,7 @@ def update_user(
     if not crud.user.is_superuser(current_user) and user_in.is_superuser:
         raise HTTPException(status_code=401, detail="Nice try!")
     user = crud.user.update(db, db_obj=user, obj_in=user_in)
-    return user
+    return {"msg": f"User {user_in.email} has been updated!"}
 
 
 @router.delete("/", response_model=schemas.Msg)
@@ -168,3 +168,5 @@ def delete_user(
     if not crud.user.get_by_email(db, email=email):
         raise HTTPException(status_code=404, detail="User not found!")
     crud.user.remove_by_email(db, email=email)
+
+    return {"msg": f"User {email} has been deleted!"}

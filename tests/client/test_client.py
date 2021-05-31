@@ -32,6 +32,10 @@ class TestClientDatabase:
         out = client.approve_database("new_database")
         assert "msg" in out.keys()  # Check for message
         new_database_client.test_token()
+    
+    def test_get_database_information(self, client, new_database_client):
+        requests = client.get_database_information()
+        assert False
 
     def test_remove_request(self, client):
         with pytest.raises(MolarBackendError):

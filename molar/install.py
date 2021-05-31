@@ -65,6 +65,7 @@ def add_user(
         query,
         {"fullname": fullname, "email": email, "hashed_password": hashed_password},
     )
+    connection.close()
 
 
 def create_database(
@@ -105,6 +106,6 @@ def drop_database(hostname, postgres_username, postgres_password, database):
         postgres_username, postgres_password, hostname, "postgres"
     )
     connection.execution_options(isolation_level="AUTOCOMMIT").execute(
-        f"drop database {database} with (force)"
+        f"drop database {database}"
     )
     connection.close()

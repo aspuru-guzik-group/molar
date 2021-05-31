@@ -51,11 +51,11 @@ def get_database_requests(
 
 
 @router.get("/information", response_model=List[schemas.DatabaseInformation])
-def get_database_information(
+def get_database_information(   
     db: Session = Depends(deps.get_db),
     current_user=Depends(deps.get_current_active_user),
 ):
-    results = db.execute(INFORMATION_QUERY).all()
+    results = db.execute(INFORMATION_QUERY)
     column_names = [
         "table_name",
         "column_name",
