@@ -6,7 +6,7 @@ services:
     depends_on:
       - postgres
     healthcheck:
-      test: ["CMD", "wget", "--server-response", "--content-on-error=off", "http://localhost:$BACKEND_PORT", "--spider", "-t", "1"]
+      test: ["CMD", "wget", "--server-response", "--content-on-error=off", "http://localhost:$BACKEND_PORT/docs", "--spider", "-t", "1"]
       timeout: 30s
       interval: 10s
       retries: 10
@@ -27,6 +27,7 @@ services:
       - EMAILS_FROM_EMAIL=$EMAILS_FROM_EMAIL
       - EMAILS_FROM_NAME=$EMAILS_FROM_NAME
       - EMAILS_ENABLED=$EMAILS_ENABLED
+      - SECRET_KEY=$SECRET_KEY
   postgres:
     image: "postgres:13"
     restart: always

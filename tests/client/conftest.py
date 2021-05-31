@@ -1,7 +1,11 @@
+# std
 import os
 from time import sleep
 
+# external
 import pytest
+
+# molar
 from molar import Client, ClientConfig
 
 
@@ -29,16 +33,11 @@ def new_database_client():
 
 @pytest.fixture(scope="class")
 def new_database(client):
-    out = client.database_creation_request("new_database", ["f875464bb81d"])
+    out = client.database_creation_request("new_database", ["compchem@head"])
     assert out["msg"] == "Database request created"
     out = client.approve_database("new_database")
-    assert (
-        out["msg"]
-        == "Database approved. The database will be available in a few seconds"
-    )
     df = client.get_database_requests()
     assert len(df) == 1
-    sleep(1)
     yield df
     client.remove_database("new_database")
     df = client.get_database_requests()

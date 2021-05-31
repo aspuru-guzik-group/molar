@@ -1,6 +1,10 @@
+# std
 from time import sleep
 
+# external
 import pytest
+
+# molar
 from molar.exceptions import MolarBackendError
 
 
@@ -20,24 +24,25 @@ class TestClientDatabase:
         assert len(requests) == 0
 
     def test_database_creation_request(self, client):
-        client.database_creation_request("new_database", ["f875464bb81d"])
+        client.database_creation_request("new_database", ["compchem@head"])
         df = client.get_database_requests()
         assert len(df) == 1
 
     def test_approve_request(self, client, new_database_client):
-        client.approve_database("new_database")
-        sleep(1)
+        out = client.approve_database("new_database")
+        assert "msg" in out.keys()  # Check for message
         new_database_client.test_token()
 
     def test_remove_request(self, client):
         with pytest.raises(MolarBackendError):
             client.remove_database_request("new_database")
 
-        client.database_creation_request("test", ["f875464bb81d"])
+        client.database_creation_request("test", ["compchem@head"])
         client.remove_database_request("test")
 
     def test_database_removed(self, client, new_database_client):
         client.remove_database("new_database")
+        sleep(3)
         with pytest.raises(MolarBackendError):
             new_database_client.test_token()
 

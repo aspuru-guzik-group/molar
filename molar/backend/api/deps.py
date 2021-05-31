@@ -1,5 +1,7 @@
+# std
 from typing import Generator, Optional
 
+# external
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt
@@ -119,7 +121,7 @@ def get_current_user(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Could not validate credentials",
         )
-    if crud is None:
+    if crud is None or not hasattr(crud, "user"):
         raise HTTPException(status_code=404, detail="User table not found")
 
     user = crud.user.get(db, user_id=token_data.sub)

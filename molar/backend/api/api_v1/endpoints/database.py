@@ -1,8 +1,14 @@
+# std
 from datetime import datetime
 from typing import List
 
-import sqlalchemy
+# external
+import alembic
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+import sqlalchemy
+from sqlalchemy.orm import Session
+
+# molar
 from molar import install
 from molar.backend import alembic_utils, database, schemas
 from molar.backend.api import deps
@@ -10,7 +16,6 @@ from molar.backend.core.config import settings
 from molar.backend.core.security import get_password_hash
 from molar.backend.crud import CRUDInterface
 from molar.backend.database.query import INFORMATION_QUERY
-from sqlalchemy.orm import Session
 
 router = APIRouter()
 
@@ -25,6 +30,7 @@ def database_creation_request(
         raise HTTPException(
             status_code=401, detail="This database name is already taken"
         )
+
     try:
         crud.molar_database.create(db, obj_in=database_in)
     except sqlalchemy.exc.IntegrityError:
@@ -66,7 +72,6 @@ def get_database_information(
 @router.put("/approve/{database_name}", response_model=schemas.Msg)
 def approve_database(
     database_name: str,
-    background_tasks: BackgroundTasks,
     db: Session = Depends(deps.get_main_db),
     crud: CRUDInterface = Depends(deps.get_main_crud),
     current_user=Depends(deps.get_main_current_active_superuser),
@@ -77,19 +82,24 @@ def approve_database(
 
     crud.molar_database.approve(db, db_obj=db_obj)
     alembic_config = alembic_utils.get_alembic_config()
-    background_tasks.add_task(
-        install.install_molar_database,
-        alembic_config=alembic_config,
-        hostname=settings.POSTGRES_SERVER,
-        postgres_username=settings.POSTGRES_USER,
-        postgres_password=settings.POSTGRES_PASSWORD,
-        new_database_name=db_obj.database_name,
-        superuser_fullname=db_obj.superuser_fullname,
-        superuser_email=db_obj.superuser_email,
-        superuser_hashed_password=db_obj.superuser_password,
-        revisions=db_obj.alembic_revisions,
-    )
-    return {"msg": "Database approved. The database will be available in a few seconds"}
+    try:
+        install.install_molar_database(
+            alembic_config=alembic_config,
+            hostname=settings.POSTGRES_SERVER,
+            postgres_username=settings.POSTGRES_USER,
+            postgres_password=settings.POSTGRES_PASSWORD,
+            new_database_name=db_obj.database_name,
+            superuser_fullname=db_obj.superuser_fullname,
+            superuser_email=db_obj.superuser_email,
+            superuser_hashed_password=db_obj.superuser_password,
+            revisions=db_obj.alembic_revisions,
+        )
+    except alembic.util.exc.CommandError as err:
+        raise HTTPException(
+            status_code=400,
+            detail=f"There was an issue during the alembic migration: {str(err)}",
+        )
+    return {"msg": f"Database {database_name} created."}
 
 
 @router.delete("/request/{database_name}", response_model=schemas.Msg)

@@ -101,7 +101,7 @@ def config_env_vars(
         print(f"BACKEND_PORT={backend_port}", file=f)
         print(f"BACKEND_NUM_WORKERS={backend_num_workers}", file=f)
         print(f"ALEMBIC_USER_DIR=/alembic", file=f)
-        print(f"SECRET_KEY={secrets.token_urlsafe(32)}")
+        print(f"SECRET_KEY={secrets.token_urlsafe(32)}", file=f)
     os.chmod(dotenv_file, stat.S_IREAD)
     return locals()
 
