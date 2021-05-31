@@ -1,9 +1,10 @@
-import click
+# external
 from alembic import command
+import click
 from rich.prompt import Confirm
 
 from .. import alembic_utils
-from ..alembic_utils import GLOBAL_VERSION_PATH, get_alembic_config
+from ..alembic_utils import get_alembic_config, GLOBAL_VERSION_PATH
 from ..cli_utils import CustomClickCommand
 
 

@@ -1,9 +1,15 @@
+# std
 from datetime import timedelta
 from typing import Any, List
 
-import sqlalchemy
+# external
 from fastapi import APIRouter, Body, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
+from pydantic import EmailStr
+import sqlalchemy
+from sqlalchemy.orm import Session
+
+# molar
 from molar.backend import database, models, schemas
 from molar.backend.core import security
 from molar.backend.core.config import settings
@@ -14,8 +20,6 @@ from molar.backend.utils import (
     send_reset_password_email,
     verify_password_reset_token,
 )
-from pydantic import EmailStr
-from sqlalchemy.orm import Session
 
 from ... import deps
 

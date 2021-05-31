@@ -1,6 +1,7 @@
-import pkg_resources
+# external
 from alembic.config import Config
 from alembic.script import ScriptDirectory
+import pkg_resources
 from pydantic import PostgresDsn
 
 from .core.config import settings

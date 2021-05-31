@@ -1,11 +1,15 @@
+# std
 from typing import Any
 
+# external
 from fastapi import APIRouter, Depends
-from molar.backend.utils import send_test_email
 from pydantic.networks import EmailStr
 
-from .... import models, schemas
+# molar
+from molar.backend.utils import send_test_email
+
 from ... import deps
+from .... import models, schemas
 
 router = APIRouter()
 

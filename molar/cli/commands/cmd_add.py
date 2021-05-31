@@ -1,3 +1,4 @@
+# external
 import click
 
 from ... import Client
@@ -17,6 +18,7 @@ def add(ctx, mapper):
             f"The available mappers are: {[k for k in client.registered_mappers.keys()]}"
         )
         return
+    # external
     import ipdb
 
     ipdb.set_trace()

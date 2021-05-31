@@ -1,5 +1,6 @@
-import sqlalchemy as sa
+# external
 from sqlalchemy import text
+import sqlalchemy as sa
 
 
 def create_connection(user, password, hostname, database):

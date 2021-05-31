@@ -1,10 +1,14 @@
+# std
 from typing import List, Optional, Union
 
+# external
 import pkg_resources
 import sqlalchemy
+from sqlalchemy.orm import aliased, Session
+
+# molar
 from molar.backend import schemas
 from molar.backend.database.utils import sqlalchemy_to_dict
-from sqlalchemy.orm import Session, aliased
 
 INFORMATION_QUERY = open(
     pkg_resources.resource_filename("molar", "sql/information_query.sql"), "r"

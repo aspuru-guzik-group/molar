@@ -1,5 +1,7 @@
+# std
 from typing import List, Optional
 
+# external
 from pydantic import BaseModel, EmailStr
 
 

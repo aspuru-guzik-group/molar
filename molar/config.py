@@ -1,3 +1,4 @@
+# std
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -8,7 +9,7 @@ class ClientConfig:
     hostname: str
     database: str
     username: str
-    password: str    
+    password: str
     port: int = 5432
     DEFAULT_DIRECTORY: str = "~/.local/molar"
 

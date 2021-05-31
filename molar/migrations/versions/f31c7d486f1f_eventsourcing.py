@@ -5,15 +5,15 @@ Revises: bf3c5d811155
 Create Date: 2021-05-26 09:20:26.242476
 
 """
-import pkg_resources
+# external
 from alembic import op
+import pkg_resources
 import sqlalchemy as sa
 
-
 # revision identifiers, used by Alembic.
-revision = 'f31c7d486f1f'
-down_revision = 'bf3c5d811155'
-branch_labels = ('eventsourcing',)
+revision = "f31c7d486f1f"
+down_revision = "bf3c5d811155"
+branch_labels = ("eventsourcing",)
 depends_on = None
 
 

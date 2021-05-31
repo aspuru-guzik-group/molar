@@ -1,10 +1,11 @@
+# std
 from typing import Any, List
 
+# external
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
-
-from mdb.backend import crud, models, schemas
 from mdb.api import deps
+from mdb.backend import crud, models, schemas
+from sqlalchemy.orm import Session
 
 router = APIRouter()
 

@@ -1,7 +1,11 @@
+# std
 import os
 
-import pytest
+# external
 from fastapi.testclient import TestClient
+import pytest
+
+# molar
 from molar.backend.main import app
 
 

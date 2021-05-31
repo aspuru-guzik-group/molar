@@ -1,6 +1,8 @@
-import warnings
+# std
 from typing import Generator, List
+import warnings
 
+# external
 from pydantic import PostgresDsn
 from sqlalchemy import create_engine
 from sqlalchemy.ext.automap import automap_base

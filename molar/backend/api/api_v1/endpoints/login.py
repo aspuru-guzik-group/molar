@@ -1,8 +1,13 @@
+# std
 from datetime import timedelta
 from typing import Any, Optional
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Header
+# external
+from fastapi import APIRouter, Body, Depends, Header, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
+from sqlalchemy.orm import Session
+
+# molar
 from molar.backend import database, models, schemas
 from molar.backend.api import deps
 from molar.backend.core import security
@@ -14,7 +19,6 @@ from molar.backend.utils import (
     send_reset_password_email,
     verify_password_reset_token,
 )
-from sqlalchemy.orm import Session
 
 router = APIRouter()
 
@@ -43,7 +47,7 @@ def login_access_token(
         "access_token": security.create_access_token(
             user.user_id, expires_delta=access_token_expires
         ),
-        "token_type": "Bearer"
+        "token_type": "Bearer",
     }
 
 

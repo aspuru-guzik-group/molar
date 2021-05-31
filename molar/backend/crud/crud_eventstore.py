@@ -1,3 +1,7 @@
+# external
+from sqlalchemy.orm import Session
+
+# molar
 from molar.backend.schemas.eventstore import (
     EventStore,
     EventStoreCreate,
@@ -5,7 +9,6 @@ from molar.backend.schemas.eventstore import (
     EventStoreUpdate,
     EventTypes,
 )
-from sqlalchemy.orm import Session
 
 from .base import CRUDBase, ModelType
 
