@@ -6,6 +6,7 @@ from pathlib import Path
 import secrets
 import shutil
 import stat
+import subprocess
 from time import sleep
 from typing import List, Optional
 
@@ -15,6 +16,7 @@ import click
 from passlib.context import CryptContext
 import pkg_resources
 from python_on_whales import docker
+from python_on_whales.utils import DockerException
 from rich.console import Console
 from rich.prompt import Confirm, Prompt
 
@@ -111,6 +113,16 @@ def config_env_vars(
 )
 @click.pass_context
 def local(ctx):
+    def _compose_status_healthy():
+        try:
+            status = docker.compose.ps()[0].state.health.status == "healthy"
+        except:
+            out = subprocess.check_output(
+                "docker-compose ps | grep postgres", shell=True
+            )
+            status = "healthy" in str(out)
+        return status
+
     console = ctx.obj["console"]
     if not find_executable("docker"):
         console.log(
@@ -137,8 +149,13 @@ def local(ctx):
     shutil.copyfile(molar_docker_compose, local_docker_compose)
     os.chdir(data_dir)
     with console.status("Setting up PostgreSQL (this can take a few minutes)..."):
-        docker.compose.up(services=["postgres"], detach=True)
-        while not docker.compose.ps()[0].state.health.status == "healthy":
+        try:
+            docker.compose.up(services=["postgres"], detach=True)
+        except DockerException:
+            # docker compose up --detach doesn't work with some
+            # version of docker
+            subprocess.call(["docker-compose", "up", "-d", "postgres"])
+        while not _compose_status_healthy():
             sleep(1)
     sleep(2)
 
