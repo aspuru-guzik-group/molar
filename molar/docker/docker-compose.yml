@@ -6,7 +6,7 @@ services:
     depends_on:
       - postgres
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://backend:$BACKEND_PORT"]
+      test: ["CMD", "wget", "--server-response", "--content-on-error=off", "http://localhost:$BACKEND_PORT", "--spider", "-t", "1"]
       timeout: 30s
       interval: 10s
       retries: 10

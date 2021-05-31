@@ -26,5 +26,6 @@ done
 
 uvicorn \
   --workers $BACKEND_NUM_WORKERS \
+  --host 0.0.0.0 \
   --port $BACKEND_PORT \
   molar.backend.main:app 
