@@ -29,7 +29,7 @@ test-backend:
       - pip install -e .[backend]
       - pip install -e .[test]
       - molarcli --data-dir db install remote --hostname tgaudin-postgresql-pgtap --postgres-username postgres --postgres-password tooth --superuser-email test@molar.tooth --superuser-password tooth
-      - uvicorn molar.backend.main:app --debug --log-level debug
+      - uvicorn molar.backend.main:app --debug --log-level debug &
     script:
       - pytest
       - coverage run --source molar -m py.test
