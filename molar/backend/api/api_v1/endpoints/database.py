@@ -16,6 +16,7 @@ from molar.backend.core.config import settings
 from molar.backend.core.security import get_password_hash
 from molar.backend.crud import CRUDInterface
 from molar.backend.database.query import INFORMATION_QUERY
+from molar.backend.utils import send_database_created_email
 
 router = APIRouter()
 
@@ -98,6 +99,11 @@ def approve_database(
         raise HTTPException(
             status_code=400,
             detail=f"There was an issue during the alembic migration: {str(err)}",
+        )
+
+    if settings.EMAILS_ENABLED:
+        send_database_created_email(
+            email_to=db_obj.superuser_email, database=db_obj.database_name
         )
     return {"msg": f"Database {database_name} created."}
 
