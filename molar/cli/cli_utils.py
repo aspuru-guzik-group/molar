@@ -55,10 +55,11 @@ def load_config(
     if database is None and ctx.obj["database"] is not None:
         database = ctx.obj["database"]
 
-    if not env_file.exists():
-        raise ValueError(
-            ".env file not found. Please specifiy --data-dir or --env-file"
+    if not env_file.exists() and data_dir is None:
+        console.log(
+            ".env file not found and no data_dir provided. Please specify --data-dir or --env-file"
         )
+        exit(1)
 
     config = dotenv_values(env_file)
     ctx.obj["env"] = config
