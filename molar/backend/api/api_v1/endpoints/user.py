@@ -15,14 +15,7 @@ from molar.backend.core import security
 from molar.backend.core.config import settings
 from molar.backend.core.security import get_password_hash
 from molar.backend.crud import CRUDInterface
-from molar.backend.utils import (
-    generate_password_reset_token,
-    send_reset_password_email,
-    verify_password_reset_token,
-)
-from pydantic import EmailStr
-from sqlalchemy.orm import Session
-
+from molar.backend.utils import send_new_account_email
 from ... import deps
 
 router = APIRouter()
@@ -74,6 +67,7 @@ def get_user_by_email(
 @router.post("/add", response_model=schemas.Msg)
 def add_a_user(
     user_in: schemas.UserCreate,
+    database_name: str = "molar_main",
     current_user=Depends(deps.get_current_active_superuser),
     db: Session = Depends(deps.get_db),
     crud: CRUDInterface = Depends(deps.get_crud),
@@ -83,12 +77,15 @@ def add_a_user(
         crud.user.create(db, obj_in=user_in)
     except sqlalchemy.exc.IntegrityError:
         raise HTTPException(status_code=401, detail="This username is already taken.")
+    if settings.EMAILS_ENABLED:
+        send_new_account_email(email_to=user_in.email, database=database_name)
     return {"msg": f"User {user_in.email} created"}
 
 
 @router.post("/register", response_model=schemas.Msg)
 def register_a_new_user(
     user_in: schemas.UserRegister,
+    database_name: str = "molar_main",
     db: Session = Depends(deps.get_db),
     crud: CRUDInterface = Depends(deps.get_crud),
 ):
@@ -103,8 +100,13 @@ def register_a_new_user(
         crud.user.create(db, obj_in=obj_in)
     except sqlalchemy.exc.IntegrityError:
         raise HTTPException(status_code=401, detail="This username is already taken.")
+    if settings.EMAILS_ENABLED:
+        send_new_account_email(email_to=user_in.email, database=database_name)
     return {
-        "msg": f"User {user_in.email} has been registered. Ask your database admin to activate this account."
+        "msg": (
+            f"User {user_in.email} has been register."
+            " Ask your database admin to activate this account"
+        )
     }
 
 

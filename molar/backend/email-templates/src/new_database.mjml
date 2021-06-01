@@ -1,0 +1,13 @@
+<mjml>
+  <mj-body background-color="#fff">
+    <mj-section>
+      <mj-column>
+        <mj-divider border-color="#555"></mj-divider>
+        <mj-text font-size="20px" color="#555" font-family="helvetica">Molar 🦷 - Your database is ready!</mj-text>
+        <mj-text font-size="16px" color="#555">Your database request for {{ database }} has been approved and created.</mj-text>
+        <mj-text font-size="20px" colot="#555">You can start using Molar with the credentials you provided!</mj-text>
+        <mj-divider border-color="#555" border-width="2px" />
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>

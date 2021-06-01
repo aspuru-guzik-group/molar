@@ -110,8 +110,9 @@ class Client:
 
     def authenticate(self):
         response = self.request(
-            f"/login/access-token?database={self.cfg.database_name}",
+            f"/login/access-token",
             method="POST",
+            params={"database_name": self.cfg.database_name},
             data={
                 "username": self.cfg.username,
                 "password": self.cfg.password,
@@ -159,9 +160,7 @@ class Client:
             "superuser_password": self.cfg.password,
             "alembic_revisions": alembic_revisions,
         }
-        return self.request(
-            "/database/request", method="POST", json=databasemodel, headers=self.headers
-        )
+        return self.request("/database/request", method="POST", json=databasemodel)
 
     def get_database_requests(self, return_pandas_dataframe=True):
         return self.request(

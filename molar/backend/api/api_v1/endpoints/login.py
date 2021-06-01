@@ -62,6 +62,7 @@ def test_token(current_user=Depends(deps.get_current_user)) -> Any:
 @router.post("/password-recovery/{email}", response_model=schemas.Msg)
 def recover_password(
     email: str,
+    database_name: str,
     crud: CRUDInterface = Depends(deps.get_crud),
     db: Session = Depends(deps.get_db),
 ) -> Any:
@@ -76,9 +77,10 @@ def recover_password(
             detail="The user with this username does not exist in the system.",
         )
     password_reset_token = generate_password_reset_token(email=email)
-    send_reset_password_email(
-        email_to=user.email, name=user.full_name, token=password_reset_token
-    )
+    if settings.EMAILS_ENABLED:
+        send_reset_password_email(
+            email_to=user.email, database=database_name, token=password_reset_token
+        )
     return {"msg": "Password recovery email sent"}
 
 

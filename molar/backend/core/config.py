@@ -51,13 +51,6 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: Optional[str] = None
     EMAILS_FROM_EMAIL: Optional[EmailStr] = None
     EMAILS_FROM_NAME: Optional[str] = None
-
-    @validator("EMAILS_FROM_NAME")
-    def get_project_name(cls, v: Optional[str], values: Dict[str, Any]) -> str:
-        if not v:
-            return values["PROJECT_NAME"]
-        return v
-
     EMAIL_RESET_TOKEN_EXPIRE_HOURS: int = 48
     EMAIL_TEMPLATES_DIR: str = pkg_resources.resource_filename(
         "molar", "backend/email-templates/build"
@@ -71,9 +64,6 @@ class Settings(BaseSettings):
             and values.get("SMTP_PORT")
             and values.get("EMAILS_FROM_EMAIL")
         )
-
-    EMAIL_TEST_USER: EmailStr = "test@example.com"  # type: ignore
-    USERS_OPEN_REGISTRATION: bool = False
 
     class Config:
         case_sensitive = True
