@@ -46,6 +46,7 @@ def config_env_vars(
     emails_enabled: Optional[bool] = None,
     smtp_tls: Optional[bool] = None,
     smtp_host: Optional[str] = None,
+    smtp_port: Optional[int] = None,
     smtp_user: Optional[str] = None,
     smtp_password: Optional[str] = None,
     emails_from_email: Optional[str] = None,
@@ -68,6 +69,8 @@ def config_env_vars(
     if emails_enabled:
         if smtp_host is None:
             smtp_host = Prompt.ask("SMTP server")
+        if smtp_port is None:
+            smtp_port = Prompt.ask("SMTP Port", default=25)
         if smtp_user is None:
             smtp_user = Prompt.ask("SMTP user")
         if smtp_password is None:
@@ -92,14 +95,14 @@ def config_env_vars(
         print(f"POSTGRES_USER={postgres_user}", file=f)
         print(f"POSTGRES_PASSWORD={postgres_password}", file=f)
         print(f"SERVER_HOST={server_host}", file=f)
-        print(f"EMAILS_ENBALED={emails_enabled}", file=f)
-        if emails_enabled:
-            print(f"SMTP_TLS={smtp_tls or False}", file=f)
-            print(f"SMTP_HOST={smtp_host or ''}", file=f)
-            print(f"SMTP_USER={smtp_user or ''}", file=f)
-            print(f"SMTP_PASSWORD={smtp_password or ''}", file=f)
-            print(f"EMAILS_FROM_EMAIL={emails_from_email or 'noreply@molar'}", file=f)
-            print(f"EMAILS_FROM_NAME={emails_from_name or ''}", file=f)
+        print(f"EMAILS_ENABLED={'true' if emails_enabled else 'false'}", file=f)
+        print(f"SMTP_TLS={'true' if smtp_tls else 'false'}", file=f)
+        print(f"SMTP_HOST={smtp_host or ''}", file=f)
+        print(f"SMTP_PORT={smtp_port or 25}", file=f)
+        print(f"SMTP_USER={smtp_user or ''}", file=f)
+        print(f"SMTP_PASSWORD={smtp_password or ''}", file=f)
+        print(f"EMAILS_FROM_EMAIL={emails_from_email or 'noreply@molar'}", file=f)
+        print(f"EMAILS_FROM_NAME={emails_from_name or ''}", file=f)
         print(f"BACKEND_PORT={backend_port}", file=f)
         print(f"BACKEND_NUM_WORKERS={backend_num_workers}", file=f)
         print(f"ALEMBIC_USER_DIR=/alembic", file=f)
