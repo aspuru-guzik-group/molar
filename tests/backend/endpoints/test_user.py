@@ -30,12 +30,17 @@ def test_add_user(client, molar_main_headers):
 
 
 class TestUpdateUser:
-    def test_register(self, client):
+    def test_register(self, client, molar_main_headers):
         out = client.post(
             "/api/v1/user/register",
             json={"full_name": "John Doe", "email": "john@doe.com", "password": "lol"},
         )
         assert out.status_code == 200
+        out = client.get(
+            "/api/v1/user/john@doe.com",
+            headers=molar_main_headers,
+        )
+        # assert out.json()["is_active"] is False
 
     def test_activate_user(self, client, molar_main_headers):
         out = client.patch(

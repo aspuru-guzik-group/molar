@@ -401,7 +401,7 @@ class Client:
             f"/user/{email}",
             method="GET",
             headers=self.headers,
-            return_pandas_dataframe=True,
+            return_pandas_dataframe=False,
         )
 
     def add_user(
@@ -472,13 +472,15 @@ class Client:
 
     def update_user(
         self,
+        email: EmailStr,
         password: Optional[str] = None,
         organization: Optional[str] = None,
-        is_active: Optional[bool] = True,
+        is_active: Optional[bool] = False,
         is_superuser: bool = False,
         full_name: Optional[str] = None,
     ):
         user_update_model = {
+            "email": email,
             "password": password,
             "organization": organization,
             "is_active": is_active,
@@ -488,9 +490,9 @@ class Client:
         return self.request(
             "/user/",
             method="PATCH",
-            data=user_update_model,
+            json=user_update_model,
             headers=self.headers,
-            return_pandas_dataframe=True,
+            return_pandas_dataframe=False,
         )
     
     def delete_user(
