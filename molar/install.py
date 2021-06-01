@@ -106,6 +106,6 @@ def drop_database(hostname, postgres_username, postgres_password, database):
         postgres_username, postgres_password, hostname, "postgres"
     )
     connection.execution_options(isolation_level="AUTOCOMMIT").execute(
-        f"drop database {database}"
+        f"drop database {database} with (force)"
     )
     connection.close()

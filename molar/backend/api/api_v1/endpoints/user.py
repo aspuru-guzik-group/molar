@@ -137,7 +137,7 @@ def deactivate_user(
     return {"msg": f"User {email} is now deactivated!"}
 
 
-@router.patch("/", response_model=schemas.User)
+@router.patch("/", response_model=schemas.Msg)
 def update_user(
     user_in: schemas.UserUpdate,
     db: Session = Depends(deps.get_db),

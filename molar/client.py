@@ -84,6 +84,7 @@ class Client:
             data=data,
             headers=headers,
         )
+        
         if response.status_code == 500:
             raise MolarBackendError(status_code=500, message="Server Error")
 
@@ -173,6 +174,7 @@ class Client:
     def get_database_information(self, return_pandas_dataframe=True):
         return self.request(
             "/database/information",
+            method="GET",
             headers=self.headers,
             return_pandas_dataframe=return_pandas_dataframe,
         )
@@ -389,7 +391,7 @@ class Client:
 
     def get_users(self):
         return self.request(
-            "/user/get-users",
+            "/user/",
             method="GET",
             headers=self.headers,
             return_pandas_dataframe=True,
@@ -407,7 +409,7 @@ class Client:
         self,
         email: EmailStr,
         password: str,
-        organization: str,
+        organization: Optional[str] = None,
         is_active: Optional[bool] = True,
         is_superuser: bool = False,
         full_name: Optional[str] = None,
@@ -419,7 +421,7 @@ class Client:
             "is_active": is_active,
             "is_superuser": is_superuser,
             "full_name": full_name,
-            "joined_on": datetime.now(),
+            "joined_on": datetime.now().isoformat(),
         }
         # check if current user is superuser is in backend
         return self.request(

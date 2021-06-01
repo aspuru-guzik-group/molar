@@ -35,7 +35,8 @@ class TestClientDatabase:
     
     def test_get_database_information(self, client, new_database_client):
         requests = client.get_database_information()
-        assert False
+        assert "table_name" in requests.keys()
+        
 
     def test_remove_request(self, client):
         with pytest.raises(MolarBackendError):
@@ -63,7 +64,59 @@ class TestClientAlembic:
 
 
 class TestClientUser:
-    pass
+    def test_get_users(self, client):
+        pandas = client.get_users()
+        assert len(pandas) == 1
+
+    def test_add_user(self, client):
+        client.add_user(
+            email="anew@email.com", 
+            password="blablablabla", 
+            full_name="Bucky Tooth",
+        )
+        pandas = client.get_users()
+        assert len(pandas) == 2
+    
+    # def test_get_user_by_email(self, client):
+    #     pandas = client.get_user_by_email("anew@email.com")
+    #     assert "Tooth inc" in pandas.values
+    #     message = client.get_user_by_email("fake@email.com")
+    #     assert message["message"] == "User not found"
+    
+    # def test_register_new_user(self, client):
+    #     client.register_user(
+    #         email="registereduser@email.com",
+    #         password="password",
+    #         organization="Not Tooth inc",
+    #     )
+    #     pandas = client.get_users_by_email("registereduser@email.com")
+    #     assert pandas
+    #     assert pandas["is_active"] == False
+
+
+    # def test_activate_user(self, client):
+    #     response = client.activate_user("registereduser@email.com")
+    #     assert response["msg"] == "User registereduser@email.com is now active!"
+
+    # def test_deactivate_user(self, client):
+    #     response = client.deactivate_user("registereduser@email.com")
+    #     assert response["msg"] == "User registereduser@email.com is now deactivated!"
+
+    # def test_update_user(self, client):
+    #     response = client.update_user(
+    #         email="anew@email.com",
+    #         password="newpassword",
+    #     )
+    #     assert response["msg"] == "User anew@email.com has been updated!"
+
+    def test_delete_user(self, client):
+        response = client.delete_user(email="anew@email.com")
+        assert response is None
+        # assert response["msg"] == "User anew@email.com has been deleted!"
+        with pytest.raises(MolarBackendError):
+            pandas = client.get_user_by_email(email="anew@email.com")
+    #     response = client.delete_user(email="registereduser@email.com")
+    #     assert response["msg"] == "User registereduser@email.com has been deleted!"
 
 
 class TestClientEventstore:

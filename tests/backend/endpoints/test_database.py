@@ -1,4 +1,4 @@
-def test_database_creation_request(client, molar_main_headers):
+def test_database_creation_request(client):
     out = client.post(
         "/api/v1/database/request",
         json={
@@ -12,15 +12,15 @@ def test_database_creation_request(client, molar_main_headers):
     assert out.status_code == 200
 
 
-# def test_get_database_requests(client, molar_main_headers):
-#     out = client.get("/api/v1/database/requests", headers=molar_main_headers)
-#     assert out.status_code == 200
-#     assert len(out.json()) == 1
+def test_get_database_requests(client, molar_main_headers):
+    out = client.get("/api/v1/database/requests", headers=molar_main_headers)
+    assert out.status_code == 200
+    assert len(out.json()) == 1
 
 
-# def test_get_database_information(client, molar_main_headers):
-#     out = client.get("/api/v1/database/information", headers=molar_main_headers)
-#     assert out.status_code == 200
+def test_get_database_information(client, molar_main_headers):
+    out = client.get("/api/v1/database/information", headers=molar_main_headers)
+    assert out.status_code == 200
 
 
 def test_approve_database(client, molar_main_headers):
