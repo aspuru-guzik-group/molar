@@ -11,7 +11,7 @@ from ..cli_utils import CustomClickCommand
 @click.group(help="Alembic wrapper")
 @click.pass_context
 def alembic(ctx):
-    ctx.obj["alembic_config"] = get_alembic_config(ctx.obj["client_config"])
+    ctx.obj["alembic_config"] = get_alembic_config()
     pass
 
 
@@ -71,14 +71,10 @@ def history(ctx, revision_range, verbose, indicate_current):
 @click.option("--revision-id", type=str, default=None)
 @click.pass_context
 def merge(ctx, revisions, message, branch_label, revision_id):
-    if not verify_user_dir(ctx):
+    if not verify_data_dir(ctx):
         return
 
-    version_path = (
-        GLOBAL_VERSION_PATH
-        if ctx.obj["client_config"].user_dir is None
-        else ctx.obj["client_config"].user_dir / "migrations"
-    )
+    version_path = ctx.obj["alembic_config"].get_main_option("version_locations")
 
     alembic_utils.merge(
         ctx.obj["alembic_config"],
@@ -111,14 +107,11 @@ def revision(
     sql=False,
     depends_on=None,
 ):
-    if not verify_user_dir(ctx):
+    if not verify_data_dir(ctx):
         return
 
-    version_path = (
-        GLOBAL_VERSION_PATH
-        if ctx.obj["client_config"].user_dir is None
-        else ctx.obj["client_config"].user_dir / "migrations"
-    )
+    version_path = ctx.obj["alembic_config"].get_main_option("version_locations")
+
     command.revision(
         ctx.obj["alembic_config"],
         message,
@@ -133,15 +126,15 @@ def revision(
     )
 
 
-def verify_user_dir(ctx):
+def verify_data_dir(ctx):
     console = ctx.obj["console"]
-    if getattr(ctx.obj["client_config"], "user_dir", None) is None:
+    if getattr(ctx.obj, "data_dir", None) is None:
         console.log(
             (
                 "[bold red]No user-dir has been specified![/bold red]\n"
                 "This means the migration will be directly added to the repository.\n"
                 "This is usually alright if you are developping Molar, "
-                "otherwise you should consider setting a user-directory.\n"
+                "otherwise you should consider setting a data-directory.\n"
             )
         )
         return Confirm.ask("Are you sure you want to proceed?")
