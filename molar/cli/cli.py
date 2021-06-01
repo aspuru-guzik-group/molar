@@ -42,3 +42,7 @@ def cli(ctx, data_dir, env_file, log_level, database):
     ctx.obj["data_dir"] = data_dir
     ctx.obj["env_file"] = env_file
     ctx.obj["database"] = database
+
+
+cli.add_command(alembic)
+cli.add_command(install)
