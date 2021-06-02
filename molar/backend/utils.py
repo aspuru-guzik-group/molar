@@ -35,7 +35,7 @@ def send_email(
         to=email_to,
         render=environment,
         smtp=smtp_options,
-        mail_from=("Molar", "test@molar.tooth"),
+        mail_from=(settings.EMAILS_FROM_NAME, settings.EMAILS_FROM_EMAIL),
     )
     logging.info(f"send email result: {response}")
 
