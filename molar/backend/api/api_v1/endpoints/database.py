@@ -100,6 +100,11 @@ def approve_database(
             status_code=400,
             detail=f"There was an issue during the alembic migration: {str(err)}",
         )
+    except sqlalchemy.exc.ProgrammingError as err:
+        raise HTTPException(
+                status_code=400,
+                detail="Database already exists!"
+        )
 
     if settings.EMAILS_ENABLED:
         send_database_created_email(
