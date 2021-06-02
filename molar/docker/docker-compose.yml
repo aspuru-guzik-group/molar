@@ -15,6 +15,7 @@ services:
     volumes:
       - "$DATA_DIR/migrations:/alembic"
     environment:
+      - ALEMBIC_USER_DIR=/alembic
       - POSTGRES_SERVER=$POSTGRES_SERVER
       - POSTGRES_USER=$POSTGRES_USER
       - POSTGRES_PASSWORD=$POSTGRES_PASSWORD
