@@ -32,12 +32,13 @@ def upgrade():
     op.create_table(
         "user",
         sa.Column("user_id", sa.Integer),
-        sa.Column("email", sa.Text, unique=True, index=True, nullable=False),
+        sa.Column("email", sa.Text, nullable=False),
         sa.Column("hashed_password", sa.Text, nullable=False),
         sa.Column("is_active", sa.Boolean, default=True),
         sa.Column("is_superuser", sa.Boolean, default=False),
         sa.Column("created_on", sa.DateTime, nullable=False),
         sa.Column("full_name", sa.Text, nullable=False),
+        sa.UniqueConstraint("email"),
         schema="user",
     )
 
