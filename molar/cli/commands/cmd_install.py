@@ -13,6 +13,7 @@ from typing import List, Optional
 # external
 from alembic import command
 import click
+from dotenv import dotenv_values
 from passlib.context import CryptContext
 import pkg_resources
 from python_on_whales import docker
@@ -55,6 +56,14 @@ def config_env_vars(
     backend_num_workers: Optional[int] = None,
 ):
     console.log("[blue bold]Setting up backend environment..")
+    if (data_dir / ".env").exists():
+        if Confirm.ask(
+            (
+                f"[red bold]A .env file already exists in {str(data_dir.resolve())}.\n"
+                "Do you want to use it?"
+            )
+        ):
+            return dotenv_values((data_dir / ".env"))
 
     if postgres_server is None:
         postgres_server = Prompt.ask("PostgreSQL server hostname", default="localhost")
