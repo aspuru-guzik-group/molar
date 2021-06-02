@@ -11,7 +11,7 @@ from ..cli_utils import CustomClickCommand
 @click.group(help="Alembic wrapper")
 @click.pass_context
 def alembic(ctx):
-    ctx.obj["alembic_config"] = get_alembic_config()
+    ctx.obj["alembic_config"] = get_alembic_config(ctx)
     pass
 
 
@@ -74,7 +74,7 @@ def merge(ctx, revisions, message, branch_label, revision_id):
     if not verify_data_dir(ctx):
         return
 
-    version_path = ctx.obj["alembic_config"].get_main_option("version_locations")
+    version_path = ctx.obj["data_dir"].resolve() / "migrations"
 
     alembic_utils.merge(
         ctx.obj["alembic_config"],
@@ -110,7 +110,7 @@ def revision(
     if not verify_data_dir(ctx):
         return
 
-    version_path = ctx.obj["alembic_config"].get_main_option("version_locations")
+    version_path = ctx.obj["data_dir"].resolve() / "migrations"
 
     command.revision(
         ctx.obj["alembic_config"],
@@ -128,10 +128,10 @@ def revision(
 
 def verify_data_dir(ctx):
     console = ctx.obj["console"]
-    if getattr(ctx.obj, "data_dir", None) is None:
+    if "data_dir" not in ctx.obj.keys() or ctx.obj["data_dir"] is None:
         console.log(
             (
-                "[bold red]No user-dir has been specified![/bold red]\n"
+                "[bold red]No data-dir has been specified![/bold red]\n"
                 "This means the migration will be directly added to the repository.\n"
                 "This is usually alright if you are developping Molar, "
                 "otherwise you should consider setting a data-directory.\n"

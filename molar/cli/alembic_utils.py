@@ -19,7 +19,9 @@ def get_alembic_config(ctx, database: Optional[str] = None):
     alembic_config = Config()
     version_locations = GLOBAL_VERSION_PATH
     if data_dir:
-        version_locations = version_locations + " " + str(data_dir / "migrations")
+        version_locations = (
+            version_locations + " " + str(data_dir.resolve() / "migrations")
+        )
     alembic_config.set_main_option("version_locations", version_locations)
     alembic_config.set_main_option("script_location", "molar:migrations")
     alembic_config.set_main_option("sqlalchemy.url", sql_url)
