@@ -44,3 +44,12 @@ def test_token(client, molar_main_headers):
     headers = {"Authorization": "Bearer asdfasdfasdfasdfd"}
     out = client.post("/api/v1/login/test-token", headers=headers)
     assert out.status_code == 403
+
+
+def test_unauthorized_access(client, new_database_headers):
+    out = client.get(
+        "/api/v1/database/information",
+        params={"database_name": "main"},
+        headers=new_database_headers,
+    )
+    assert out.status_code == 403

@@ -16,3 +16,4 @@ class TokenVersionControl(Token):
 
 class TokenPayload(BaseModel):
     sub: Optional[int] = None
+    db: Optional[str] = None

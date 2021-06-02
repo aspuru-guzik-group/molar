@@ -25,6 +25,7 @@ router = APIRouter()
 
 @router.post("/login/access-token", response_model=schemas.Token)
 def login_access_token(
+    database_name="main",
     db: Session = Depends(deps.get_db),
     crud: CRUDInterface = Depends(deps.get_crud),
     form_data: OAuth2PasswordRequestForm = Depends(),
@@ -45,7 +46,9 @@ def login_access_token(
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     return {
         "access_token": security.create_access_token(
-            user.user_id, expires_delta=access_token_expires
+            user.user_id,
+            database_name=database_name,
+            expires_delta=access_token_expires,
         ),
         "token_type": "Bearer",
     }

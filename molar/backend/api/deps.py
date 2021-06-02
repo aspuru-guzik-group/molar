@@ -45,6 +45,8 @@ def get_main_current_user(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Could not validate credentials",
         )
+    if token_data.db != "molar_main" and token_data.db != "main":
+        raise HTTPException(status_code=403, detail="Not allowed on this database")
     user = crud.user.get(db, user_id=token_data.sub)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -97,7 +99,7 @@ def get_crud(database_name: Optional[str] = "main"):
 
 def get_models(database_name: Optional[str] = "main"):
     if database_name == "molar_main":
-        databae_name = "main"
+        database_name = "main"
     base = getattr(database, database_name)
     if base is None:
         return None
@@ -105,6 +107,7 @@ def get_models(database_name: Optional[str] = "main"):
 
 
 def get_current_user(
+    database_name: str,
     db: Session = Depends(get_db),
     crud: CRUDInterface = Depends(get_crud),
     token: str = Depends(reusable_oauth2),
@@ -121,6 +124,10 @@ def get_current_user(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Could not validate credentials",
         )
+
+    if token_data.db != database_name:
+        raise HTTPException(status_code=403, detail="Not allowed on this database")
+
     if crud is None or not hasattr(crud, "user"):
         raise HTTPException(status_code=404, detail="User table not found")
 
