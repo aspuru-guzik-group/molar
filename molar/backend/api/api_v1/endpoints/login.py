@@ -33,6 +33,8 @@ def login_access_token(
     """
     OAuth2 compatible token login, get an access token for future requests
     """
+    if database_name == "molar_main":
+        database_name = "main"
     if db is None or not hasattr(crud, "user"):
         raise HTTPException(status_code=400, detail="Invalid database")
 
