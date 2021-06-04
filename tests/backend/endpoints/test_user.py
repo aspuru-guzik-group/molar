@@ -11,6 +11,7 @@ def test_add_user(client, molar_main_headers):
             "email": "test@newuser.com",
             "full_name": "Margaret Atwood",
             "password": "test",
+            "is_active": True,
         },
         headers=molar_main_headers,
     )
@@ -40,7 +41,7 @@ class TestUpdateUser:
             "/api/v1/user/john@doe.com",
             headers=molar_main_headers,
         )
-        # assert out.json()["is_active"] is False
+        assert out.json()["is_active"] is False
 
     def test_activate_user(self, client, molar_main_headers):
         out = client.patch(

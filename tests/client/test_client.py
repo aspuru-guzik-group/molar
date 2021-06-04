@@ -72,11 +72,14 @@ class TestClientUser:
         assert len(pandas) == 1
 
     def test_add_user(self, client):
-        client.add_user(
+        response = client.add_user(
             email="anew@email.com", 
             password="blablablabla", 
             full_name="Bucky Tooth",
+            is_active=True,
+            is_superuser=False,
         )
+        assert response["msg"] == "User anew@email.com created"
         pandas = client.get_users()
         assert len(pandas) == 2
     
@@ -93,8 +96,8 @@ class TestClientUser:
             full_name="Chip Skylark",
         )
         assert answer["msg"] == "User registereduser@email.com has been register. Ask your database admin to activate this account"
-        # pandas = client.get_user_by_email("registereduser@email.com")
-        # assert pandas["is_active"] is False
+        pandas = client.get_user_by_email("registereduser@email.com")
+        assert pandas["is_active"] is False
 
 
     def test_activate_user(self, client):
@@ -105,32 +108,42 @@ class TestClientUser:
 
     def test_deactivate_user(self, client):
         response = client.deactivate_user("registereduser@email.com")
-        assert response["msg"] == "User registereduser@email.com is now desactivated!"
-        # pandas = client.get_user_by_email("registereduser@email.com")
-        # assert pandas["is_active"] == False
+        assert response["msg"] == "User registereduser@email.com is now deactivated!"
+        pandas = client.get_user_by_email("registereduser@email.com")
+        assert pandas["is_active"] is False
 
-    def test_update_user(self, client):
-        response = client.update_user(
-            email="anew@email.com",
-            # password="paw",
-            # organization="Tooth inc",
-            # is_active=True,
-            # is_superuser=True,
-            full_name="Croustilles Skylark",
-        )
-        # assert response["msg"] == "User anew@email.com has been updated!"
-        pandas = client.get_user_by_email("anew@email.com")
-        assert pandas["full_name"] == "Croustilles Skylark"
+    # def test_update_superuser_rights(self, client):
+    #     pandas = client.get_user_by_email("anew@email.com")
+    #     assert pandas["is_superuser"] == False
+    #     response = client.update_superuser_rights(
+    #         email="anew@email.com",
+    #         is_superuser=True,
+    #     )
+    #     assert response["msg"] == "User anew@email.com has been updated!"
+    #     pandas = client.get_user_by_email("anew@email.com")
+    #     assert pandas["is_superuser"] == True
+
+    # def test_update_user(self, client):
+    #     response = client.update_user(
+    #         email="anew@email.com",
+    #         # password="paw",
+    #         # organization="Tooth inc",
+    #         # is_active=True,
+    #         # is_superuser=True,
+    #         full_name="Croustilles Skylark",
+    #     )
+    #     assert response["msg"] == "User anew@email.com has been updated!"
+    #     pandas = client.get_user_by_email("anew@email.com")
+    #     assert pandas["full_name"] == "Croustilles Skylark"
+
 
     def test_delete_user(self, client):
         response = client.delete_user(email="anew@email.com")
-        assert response is None
-        # assert response["msg"] == "User anew@email.com has been deleted!"
+        assert response["msg"] == "User anew@email.com has been deleted!"
         with pytest.raises(MolarBackendError):
             pandas = client.get_user_by_email(email="anew@email.com")
         response = client.delete_user(email="registereduser@email.com")
-        assert response is None
-        # assert response["msg"] == "User registereduser@email.com has been deleted!"
+        assert response["msg"] == "User registereduser@email.com has been deleted!"
 
 
 class TestClientEventstore:

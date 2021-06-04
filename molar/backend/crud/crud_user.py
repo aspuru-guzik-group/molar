@@ -1,6 +1,7 @@
 # std
 from datetime import datetime
 from typing import Any, Dict, Optional, Union
+from sqlalchemy.exc import InvalidRequestError
 
 # external
 from sqlalchemy.orm import Session
@@ -65,7 +66,11 @@ class CRUDUser(CRUDBase[ModelType, UserCreate, UserUpdate]):
         return user.is_active
 
     def activate(self, db: Session, *, db_obj) -> ModelType:
+        
         setattr(db_obj, "is_active", True)
+        # if not getattr(db_obj, "is_active"):
+        #     raise InvalidRequestError()
+        # return db_obj
         db.add(db_obj)
         db.commit()
         db.refresh(db_obj)

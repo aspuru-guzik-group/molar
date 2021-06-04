@@ -10,8 +10,9 @@ from pydantic import BaseModel, EmailStr
 class UserBase(BaseModel):
     email: EmailStr
     is_superuser: bool = False
-    is_active: bool = True
+    is_active: bool = False
     full_name: Optional[str] = None
+    organization: Optional[str] = None
     created_on: Optional[datetime] = None
 
 

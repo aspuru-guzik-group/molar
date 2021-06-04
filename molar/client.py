@@ -409,18 +409,16 @@ class Client:
         email: EmailStr,
         password: str,
         organization: Optional[str] = None,
-        is_active: Optional[bool] = True,
+        is_active: bool = False,
         is_superuser: bool = False,
         full_name: Optional[str] = None,
     ):
         user_create_model = {
             "email": email,
             "password": password,
-            "organization": organization,
             "is_active": is_active,
             "is_superuser": is_superuser,
             "full_name": full_name,
-            "joined_on": datetime.now().isoformat(),
         }
         # check if current user is superuser is in backend
         return self.request(
@@ -468,6 +466,37 @@ class Client:
             method="PATCH",
             params={"email": email},
             headers=self.headers,
+        )
+    
+    def update_superuser_rights(
+        self,
+        email: EmailStr,
+        is_superuser: bool,
+    ):
+        user =  self.get_user_by_email(email=email)
+        user["is_superuser"]=True
+        return self.request(
+            "/user/",
+            method="PATCH",
+            json=user,
+            headers=self.headers,
+            return_pandas_dataframe=False,
+        )
+    
+    def update_password(
+        self,
+        email: EmailStr,
+        old_password: str,
+        new_password: str,
+    ):
+        return self.request(
+            "/user/password",
+            method="PATCH",
+            params={
+                "email": email,
+                "old_password": old_password,
+                "new_password": new_password,
+            }
         )
 
     def update_user(

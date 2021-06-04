@@ -9,7 +9,7 @@ import pytest
 from molar import Client, ClientConfig
 
 
-def client_factory(database_name="molar_main"):
+def client_factory(database_name="main"):
     cfg = ClientConfig(
         server_url=os.getenv("SERVER_HOST") or "http://localhost:",
         api_prefix=os.getenv("API_PATH") or "/api/v1",

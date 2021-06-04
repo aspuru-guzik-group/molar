@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 from molar.backend import database, models, schemas
 from molar.backend.core import security
 from molar.backend.core.config import settings
-from molar.backend.core.security import get_password_hash
+from molar.backend.core.security import verify_password
 from molar.backend.crud import CRUDInterface
 from molar.backend.utils import send_new_account_email
 from ... import deps
@@ -59,7 +59,7 @@ def get_user_by_email(
         "email": db_obj.email,
         "full_name": db_obj.full_name,
         "created_on": db_obj.created_on,
-        "is_activate": db_obj.is_active,
+        "is_active": db_obj.is_active,
         "is_superuser": db_obj.is_superuser,
     }
 
@@ -97,7 +97,8 @@ def register_a_new_user(
         is_superuser=False,
     )
     try:
-        crud.user.create(db, obj_in=obj_in)
+        db_obj = crud.user.create(db, obj_in=obj_in)
+        # crud.user.deactivate(db, db_obj=db_obj)
     except sqlalchemy.exc.IntegrityError:
         raise HTTPException(status_code=401, detail="This username is already taken.")
     if settings.EMAILS_ENABLED:
@@ -120,7 +121,16 @@ def activate_user(
     db_obj = crud.user.get_by_email(db, email=email)
     if not db_obj:
         raise HTTPException(status_code=404, detail="User not found")
-    crud.user.activate(db, db_obj=db_obj)
+    resp = crud.user.activate(db, db_obj=db_obj)
+    # if resp.is_active:
+    #     raise HTTPException(status_code=404, detail="is_active is True")
+    # return {
+    #     "email": resp.email,
+    #     "full_name": resp.full_name,
+    #     "created_on": resp.created_on,
+    #     "is_active": resp.is_active,
+    #     "is_superuser": resp.is_superuser,
+    # }
     return {"msg": f"User {email} is now active!"}
 
 
@@ -135,7 +145,14 @@ def deactivate_user(
     db_obj = crud.user.get_by_email(db, email=email)
     if not db_obj:
         raise HTTPException(status_code=404, detail="User not found")
-    crud.user.deactivate(db, db_obj=db_obj)
+    updated = crud.user.deactivate(db, db_obj=db_obj)
+    # return {
+    #     "email": updated.email,
+    #     "full_name": updated.full_name,
+    #     "created_on": updated.created_on,
+    #     "is_activate": updated.is_active,
+    #     "is_superuser": updated.is_superuser,
+    # }
     return {"msg": f"User {email} is now deactivated!"}
 
 
@@ -161,6 +178,78 @@ def update_user(
     user = crud.user.update(db, db_obj=user, obj_in=user_in)
     return {"msg": f"User {user_in.email} has been updated!"}
 
+# @router.patch("/superuser", response_model=schemas.Msg)
+# def grant_superuser_rights(
+#     email: EmailStr,
+#     new_is_superuser: bool,
+#     db: Session = Depends(deps.get_db),
+#     current_user = Depends(deps.get_current_active_user),
+#     crud: CRUDInterface = Depends(deps.get_crud),
+# ):
+#     if current_user.email != email and not crud.user.is_superuser(current_user):
+#         raise HTTPException(
+#             status_code=401, detail="You don't have sufficient permission"
+#         )
+    
+#     user = crud.user.get_by_email(db, email=email)
+
+#     if not user:
+#         raise HTTPException(status_code=404, detail="User not found")
+    
+#     if user.is_superuser:
+#         return {"msg": f"User {email} is already a superuser"}
+    
+#     if not crud.user.is_superuser(current_user):
+#         raise HTTPException(status_code=401, detail="Nice try!")
+    
+#     user_update_model = {
+#         "email": email,
+#         "password": user.password,
+#         "organization": user.organization,
+#         "is_active": user.is_active,
+#         "is_superuser": new_is_superuser,
+#         "full_name": user.full_name,
+#     }
+#     user = crud.user.update(db, db_obj=user, obj_in=user_update_model)
+
+#     return {"msg": f"User {email} now has superuser rights"}
+
+# @router.patch("/password", response_model=schemas.Msg)
+# def update_password(
+#     email: EmailStr,
+#     old_password: bool,
+#     new_password: bool,
+#     db: Session = Depends(deps.get_db),
+#     current_user = Depends(deps.get_current_active_user),
+#     crud: CRUDInterface = Depends(deps.get_crud),
+# ):
+#     if current_user.email != email and not crud.user.is_superuser(current_user):
+#         raise HTTPException(
+#             status_code=401, detail="You don't have sufficient permission"
+#         )
+    
+#     user = crud.user.get_by_email(db, email=email)
+
+#     if not user:
+#         raise HTTPException(status_code=404, detail="User not found")
+    
+#     if not crud.user.is_superuser(current_user):
+#         raise HTTPException(status_code=401, detail="Only superusers can change passwords")
+
+#     if not verify_password(old_password, user.password):
+#         raise HTTPException(status_code=401, detail="Passwords do not match")
+    
+#     user_update_model = {
+#         "email": email,
+#         "password": new_password,
+#         "organization": user.organization,
+#         "is_active": user.is_active,
+#         "is_superuser": user.is_supervisor,
+#         "full_name": user.full_name,
+#     }
+#     user = crud.user.update(db, db_obj=user, obj_in=user_update_model)
+
+#     return {"msg": f"User {email} now has superuser rights"}
 
 @router.delete("/", response_model=schemas.Msg)
 def delete_user(
