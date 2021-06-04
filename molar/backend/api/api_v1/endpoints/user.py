@@ -1,21 +1,19 @@
 # std
-from datetime import timedelta
 from typing import Any, List
 
 # external
 from fastapi import APIRouter, Body, Depends, HTTPException
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.encoders import jsonable_encoder
 from pydantic import EmailStr
 import sqlalchemy
 from sqlalchemy.orm import Session
 
 # molar
-from molar.backend import database, models, schemas
-from molar.backend.core import security
+from molar.backend import schemas
 from molar.backend.core.config import settings
-from molar.backend.core.security import verify_password
 from molar.backend.crud import CRUDInterface
 from molar.backend.utils import send_new_account_email
+
 from ... import deps
 
 router = APIRouter()
@@ -158,25 +156,39 @@ def deactivate_user(
 
 @router.patch("/", response_model=schemas.Msg)
 def update_user(
-    user_in: schemas.UserUpdate,
+    email: EmailStr,
+    password: str = Body(None),
+    full_name: str = Body(None),
+    is_superuser: bool = Body(None),
+    is_active: bool = Body(None),
     db: Session = Depends(deps.get_db),
     current_user=Depends(deps.get_current_active_user),
     crud: CRUDInterface = Depends(deps.get_crud),
 ) -> Any:
-    if current_user.email != user_in.email and not crud.user.is_superuser(current_user):
+    current_user_data = jsonable_encoder(crud.user.get_by_email(db, email=email))
+    user_in = schemas.UserUpdate(**current_user_data)
+    if email != current_user.email and not current_user.is_superuser:
         raise HTTPException(
-            status_code=401, detail="You don't have sufficient permission"
+            status_code=403, detail="You don't have sufficient permission."
         )
 
-    user = crud.user.get_by_email(db, email=user_in.email)
+    if (
+        is_superuser is not None or is_active is not None
+    ) and not current_user.is_superuser:
+        raise HTTPException(status_code=403, detail="Nice try!")
+    if password is not None:
+        user_in.password = password
+    if full_name is not None:
+        user_in.full_name = full_name
+    if email is not None:
+        user_in.email = email
+    if is_active is not None:
+        user_in.is_active = is_active
+    if is_superuser is not None:
+        user_in.is_superuser = is_superuser
+    user = crud.user.update(db, db_obj=current_user, obj_in=user_in)
+    return {"msg": f"User {user.email} has been updated!"}
 
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    if not crud.user.is_superuser(current_user) and user_in.is_superuser:
-        raise HTTPException(status_code=401, detail="Nice try!")
-    user = crud.user.update(db, db_obj=user, obj_in=user_in)
-    return {"msg": f"User {user_in.email} has been updated!"}
 
 # @router.patch("/superuser", response_model=schemas.Msg)
 # def grant_superuser_rights(
@@ -190,18 +202,18 @@ def update_user(
 #         raise HTTPException(
 #             status_code=401, detail="You don't have sufficient permission"
 #         )
-    
+
 #     user = crud.user.get_by_email(db, email=email)
 
 #     if not user:
 #         raise HTTPException(status_code=404, detail="User not found")
-    
+
 #     if user.is_superuser:
 #         return {"msg": f"User {email} is already a superuser"}
-    
+
 #     if not crud.user.is_superuser(current_user):
 #         raise HTTPException(status_code=401, detail="Nice try!")
-    
+
 #     user_update_model = {
 #         "email": email,
 #         "password": user.password,
@@ -227,18 +239,18 @@ def update_user(
 #         raise HTTPException(
 #             status_code=401, detail="You don't have sufficient permission"
 #         )
-    
+
 #     user = crud.user.get_by_email(db, email=email)
 
 #     if not user:
 #         raise HTTPException(status_code=404, detail="User not found")
-    
+
 #     if not crud.user.is_superuser(current_user):
 #         raise HTTPException(status_code=401, detail="Only superusers can change passwords")
 
 #     if not verify_password(old_password, user.password):
 #         raise HTTPException(status_code=401, detail="Passwords do not match")
-    
+
 #     user_update_model = {
 #         "email": email,
 #         "password": new_password,
@@ -250,6 +262,7 @@ def update_user(
 #     user = crud.user.update(db, db_obj=user, obj_in=user_update_model)
 
 #     return {"msg": f"User {email} now has superuser rights"}
+
 
 @router.delete("/", response_model=schemas.Msg)
 def delete_user(

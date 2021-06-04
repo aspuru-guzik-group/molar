@@ -80,16 +80,18 @@ class TestUpdateUser:
 
         out = client.patch(
             "/api/v1/user/",
-            json={"email": "john@doe.com", "password": "test"},
+            params={"email": "john@doe.com"},
+            json={"password": "test"},
             headers=headers,
         )
         assert out.status_code == 200
         out = client.patch(
             "/api/v1/user/",
-            json={"email": "john@doe.com", "is_superuser": True},
+            params={"email": "john@doe.com"},
+            json={"is_superuser": True},
             headers=headers,
         )
-        assert out.status_code == 401
+        assert out.status_code == 403
 
     def test_delete_user(self, client, molar_main_headers):
         out = client.delete(

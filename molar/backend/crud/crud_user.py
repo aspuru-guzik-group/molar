@@ -1,9 +1,9 @@
 # std
 from datetime import datetime
 from typing import Any, Dict, Optional, Union
-from sqlalchemy.exc import InvalidRequestError
 
 # external
+from sqlalchemy.exc import InvalidRequestError
 from sqlalchemy.orm import Session
 
 from ..core.security import get_password_hash, verify_password
@@ -40,7 +40,7 @@ class CRUDUser(CRUDBase[ModelType, UserCreate, UserUpdate]):
             update_data = obj_in
         else:
             update_data = obj_in.dict(exclude_unset=True)
-        if update_data["password"]:
+        if "password" in update_data.keys():
             hashed_password = get_password_hash(update_data["password"])
             del update_data["password"]
             update_data["hashed_password"] = hashed_password
@@ -66,7 +66,7 @@ class CRUDUser(CRUDBase[ModelType, UserCreate, UserUpdate]):
         return user.is_active
 
     def activate(self, db: Session, *, db_obj) -> ModelType:
-        
+
         setattr(db_obj, "is_active", True)
         # if not getattr(db_obj, "is_active"):
         #     raise InvalidRequestError()
