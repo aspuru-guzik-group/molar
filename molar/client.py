@@ -203,8 +203,9 @@ class Client:
 
     def view_entries(
         self,
-        database_name: str,
+        database_name: Optional[str]=None,
     ):
+        database_name = database_name or self.cfg.database_name
         return self.request(
             f"/eventstore/{database_name}",
             method="GET",
@@ -228,7 +229,7 @@ class Client:
             method="POST",
             json=datum,
             headers=self.headers,
-            return_pandas_dataframe=True,
+            return_pandas_dataframe=False,
         )
 
     def update_entry(
@@ -238,8 +239,8 @@ class Client:
         type: str,
         data: Dict[str, Any],
     ):
-        datum = {
-            "type": type,
+        datum = {       
+            "type": "molecule",
             "data": data,
             "uuid": uuid,
         }
@@ -248,7 +249,7 @@ class Client:
             method="PATCH",
             json=datum,
             headers=self.headers,
-            return_pandas_dataframe=True,
+            return_pandas_dataframe=False,
         )
 
     def delete_entry(
@@ -266,25 +267,25 @@ class Client:
             method="DELETE",
             json=datum,
             headers=self.headers,
-            return_pandas_dataframe=True,
+            return_pandas_dataframe=False,
         )
 
     
     """
     QUERYING RELATED ACTIONS
     """
-    def query_multiple_joins_filters(
+    def query_database(
         self,
         database_name: str,
         type: Union[str, List[str]],
-        limit: Optional[int],
-        offset: Optional[int],
-        joins: Optional[Union[List[schemas.QueryJoin], schemas.QueryJoin]],
-        filters: Optional[Union[schemas.QueryFilter, schemas.QueryFilterList]],
-        order_by: Optional[str],
+        limit: Optional[int]=None,
+        offset: Optional[int]=None,
+        joins: Optional[Union[List[schemas.QueryJoin], schemas.QueryJoin]]=None,
+        filters: Optional[Union[schemas.QueryFilter, schemas.QueryFilterList]]=None,
+        order_by: Optional[str]=None,
     ):
         json = {
-            "type": type,
+            "types": type,
             "limit": limit,
             "offset": offset,
             "joins": joins,
@@ -295,54 +296,7 @@ class Client:
             f"/query/{database_name}",
             method="GET",
             headers=self.headers,
-            return_pandas_dataframe=True,
-        )
-    
-    def query_database(
-        self,
-        database_name: str,
-        type: Union[str, List[str]],
-        limit: Optional[int],
-        offset: Optional[int],
-        join_on: Optional[str],
-        join_type: Optional[str],
-        filter_on: Optional[str],
-        filter_op: Optional[str],
-        filter_value: Optional[str],
-        order_by: Optional[str],
-    ):
-        # invalid filter
-        if not (filter_on and filter_op and filter_value) and (
-            filter_on or filter_op or filter_value
-        ):
-            raise ValueError(
-                "Invalid filter values: must either have all filter values or none"
-            )
-
-        # invalid join values
-        if not join_on and join_type:
-            raise ValueError("Must join on something if there is a join type specified")
-
-        json = {
-            "type": type,
-            "limit": limit,
-            "offset": offset,
-            "joins": {
-                "type": join_on,
-                "join_type": join_type,
-            },
-            "filter": {
-                "type": filter_on,
-                "op": filter_op,
-                "value": filter_value,
-            },
-            "order_by": order_by,
-        }
-
-        return self.request(
-            f"/query/{database_name}",
-            method="GET",
-            headers=self.headers,
+            json=json,
             return_pandas_dataframe=True,
         )
 

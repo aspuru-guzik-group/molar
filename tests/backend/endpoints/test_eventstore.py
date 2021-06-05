@@ -13,7 +13,7 @@ class TestEventStore:
         assert len(out.json()) == 1
 
         # Database without eventstore
-        out = client.get("/api/v1/evenstore/molar_main", headers=new_database_headers)
+        out = client.get("/api/v1/eventstore/main", headers=new_database_headers)
         assert out.status_code == 404
 
     def test_update_eventstore(self, client, new_database_headers):
