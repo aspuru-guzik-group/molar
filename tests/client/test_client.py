@@ -212,42 +212,209 @@ class TestClientEventstore:
     
 
 class TestClientQuery:
+    # @pytest.fixture(autouse=True, scope="class")
+    # def insert_data(client, new_database_client, new_database):
+    #     molecule = new_database_client.create_entry(
+    #         database_name="new_database",
+    #         type="molecule",
+    #         data={
+    #             "smiles": "abc",
+    #             "metadata": {
+    #                 "test": "test",
+    #                 "test_filters": "abc",
+    #                 "canthisbeanything": "cycle",
+    #             }
+    #         }
+    #     )
+    #     new_database_client.create_entry(
+    #         database_name="new_database",
+    #         type="molecule",
+    #         data={
+    #             "smiles": "abbae",
+    #             "canthisbeanything": "hi",
+    #             "metadata": {
+    #                 "name": "benzoic acid",
+    #                 "filter": "cycle",
+    #             }
+    #         }
+    #     )
+    #     conformer = new_database_client.create_entry(
+    #         database_name="new_database",
+    #         type="conformer",
+    #         data={
+    #             "x": [0],
+    #             "y": [1],
+    #             "z": [2],
+    #             "atomic_numbers": [2],
+    #             "canthisbeanything": "hi",
+    #             "molecule_id": molecule["uuid"],
+    #             "metadata": {
+    #                 "name": "benzene",
+    #                 "filter": "cycle",
+    #             }
+    #         }
+    #     )
+    #     software = new_database_client.create_entry(
+    #         database_name="new_database",
+    #         type="software",
+    #         data={
+    #             "name": "cp2k",
+    #             "version": "v1.0",
+    #             "canthisbeanything": "hi",
+    #         }
+    #     )
+    #     new_database_client.create_entry(
+    #         database_name="new_database",
+    #         type="calculation",
+    #         data={
+    #             "conformer_id": conformer["uuid"],
+    #             "software_id": software["uuid"],
+    #             "output_conformer_id": conformer["uuid"],
+    #             "canthisbeanything": "hi",
+    #         }
+    #     )
+    #     moletype = new_database_client.create_entry(
+    #         database_name="new_database",
+    #         type="molecule_type",
+    #         data={
+    #             "name": "test_type"
+    #         }
+    #     )
+    #     new_database_client.create_entry(
+    #         database_name="new_database",
+    #         type="molecule",
+    #         data={
+    #             "smiles": "def",
+    #             "molecule_type_id": moletype["uuid"],
+    #         }
+    #     )
+
     @pytest.fixture(autouse=True, scope="class")
-    def insert_data(client, new_database_client, new_database):
-        new_database_client.create_entry(
+    def insert_dummy_data(self, new_database_client, new_database):
+        molecule = new_database_client.create_entry(
             database_name="new_database",
             type="molecule",
             data={
                 "smiles": "abc",
                 "metadata": {
-                    "name": "benzene",
-                    "filter": "cycle",
+                    "test": "test",
+                    "test_filters": "abc",
                 }
             }
         )
-        new_database_client.create_entry(
-            database_name="new_database",
-            type="molecule",
-            data={
-                "smiles": "abbae",
-                "metadata": {
-                    "name": "benzoic acid",
-                    "filter": "cycle",
-                }
-            }
-        )
-        new_database_client.create_entry(
+        conformer = new_database_client.create_entry(
             database_name="new_database",
             type="conformer",
             data={
                 "x": [0],
                 "y": [1],
                 "z": [2],
-                "atomic_numbers"
-                "metadata": {
-                    "name": "benzene",
-                    "filter": "cycle",
-                }
+                "atomic_numbers": [2],
+                "molecule_id": molecule["uuid"],
+            }
+        ) 
+        software = new_database_client.create_entry(
+            database_name="new_database",
+            type="software",
+            data={
+                "name": "cp2k",
+                "version": "v1.0",
             }
         )
+        new_database_client.create_entry(
+            database_name="new_database",
+            type="calculation",
+            data={
+                "conformer_id": conformer["uuid"],
+                "software_id": software["uuid"],
+                "output_conformer_id": conformer["uuid"],
+            }
+        )
+        event=new_database_client.create_entry(
+            database_name="new_database",
+            type="molecule_type",
+            data={
+                "name": "test_type",
+            }
+        )
+        new_database_client.create_entry(
+            database_name="new_database",
+            type="molecule",
+            data={
+                "smiles": "def",
+                "molecule_type_id": event["uuid"],
+            }
+        )
+
+    def test_simple_query(self, new_database_client):
+        pandas = new_database_client.query_database(
+            database_name="new_database",
+            type="molecule"
+        )
+        assert len(pandas) == 2
+        pandas = new_database_client.query_database(
+            database_name="new_database",
+            type=["molecule.smiles"],
+        )
+        pandas = new_database_client.query_database(
+            database_name="new_database",
+            type=["molecule_type.name"],
+        )
+        pandas = new_database_client.query_database(
+            database_name="new_database",
+            type=["molecule.smiles", "molecule_type.name"],
+        )
+        assert len(pandas) == 2
+        assert "molecule.smiles" in pandas.columns
+        assert "molecule_type.name" in pandas.columns
+
+    def test_query_with_field(self, new_database_client):
+        pandas = new_database_client.query_database(
+            database_name="new_database",
+            type="molecule.metadata.test"
+        )
+        assert len(pandas) == 2
+        assert pandas.iloc[0]["molecule.metadata.test"] == "test"
+        assert pandas.iloc[1]["molecule.metadata.test"] is None
+        
+        pandas = new_database_client.query_database(
+            database_name="new_database",
+            type=["molecule.metadata.test", "molecule.smiles"],
+        )
+    
+    def test_filters(self, new_database_client):
+        pandas = new_database_client.query_database(
+            database_name="new_database",
+            type="molecule",
+            filters={
+                "type": "molecule.smiles",
+                "op": "==",
+                "value": "abc",
+            }
+        )
+        assert len(pandas) == 1
+        assert pandas.iloc[0]["smiles"] == "abc"
+
+        pandas = new_database_client.query_database(
+            database_name="new_database",
+            type="molecule",
+            filters={
+                "type": "molecule.smiles",
+                "op": "==",
+                "value": "molecule.metadata.test_filters",
+            }
+        )
+        assert len(pandas) == 1
+    
+    def test_bad_query(self, new_database_client):
+        with pytest.raises(MolarBackendError):
+            new_database_client.query_database(
+                database_name="doesntexist",
+                type="molecule",
+            )
+        with pytest.raises(TypeError):
+            new_database_client.query_database(
+                database_name="new_database",
+            )
+
 

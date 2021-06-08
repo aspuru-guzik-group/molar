@@ -1,0 +1,46 @@
+version: "3.9"
+services:
+  backend:
+    image: "matterlab/molar:latest"
+    restart: always
+    depends_on:
+      - postgres
+    healthcheck:
+      test: ["CMD", "wget", "--server-response", "--content-on-error=off", "http://localhost:$BACKEND_PORT/docs", "--spider", "-t", "1"]
+      timeout: 30s
+      interval: 10s
+      retries: 10
+    ports:
+      - "$BACKEND_PORT:$BACKEND_PORT"
+    volumes:
+      - "$DATA_DIR/migrations:/alembic"
+    environment:
+      - ALEMBIC_USER_DIR=/alembic
+      - POSTGRES_SERVER=$POSTGRES_SERVER
+      - POSTGRES_USER=$POSTGRES_USER
+      - POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+      - SERVER_HOST=$SERVER_HOST
+      - SMTP_TLS=$SMTP_TLS
+      - SMTP_HOST=$SMTP_HOST
+      - SMTP_PORT=$SMTP_PORT
+      - SMTP_USER=$SMTP_USER
+      - SMTP_PASSWORD=$SMTP_PASSWORD
+      - EMAILS_FROM_EMAIL=$EMAILS_FROM_EMAIL
+      - EMAILS_FROM_NAME=$EMAILS_FROM_NAME
+      - EMAILS_ENABLED=$EMAILS_ENABLED
+      - SECRET_KEY=$SECRET_KEY
+  postgres:
+    image: "postgres:13"
+    restart: always
+    healthcheck:
+      test: ["CMD", "pg_isready", "-q", "-U", "$POSTGRES_USER"]
+      timeout: 45s
+      interval: 10s
+      retries: 10
+    ports:
+      - "5432:5432"
+    volumes:
+      - "$DATA_DIR/postgres:/var/lib/postgresql/data"
+    environment:
+      - POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+

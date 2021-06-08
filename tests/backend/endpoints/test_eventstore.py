@@ -14,7 +14,7 @@ class TestEventStore:
 
         # Database without eventstore
         out = client.get("/api/v1/eventstore/main", headers=new_database_headers)
-        assert out.status_code == 404
+        assert out.status_code == 403
 
     def test_update_eventstore(self, client, new_database_headers):
         out = client.get(

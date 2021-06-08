@@ -289,7 +289,7 @@ class Client:
             "limit": limit,
             "offset": offset,
             "joins": joins,
-            "filter": filters,
+            "filters": filters,
             "order_by": order_by,
         }
         return self.request(
