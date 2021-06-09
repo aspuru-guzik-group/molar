@@ -110,7 +110,7 @@ def config_env_vars(
         print(f"SMTP_PORT={smtp_port or 25}", file=f)
         print(f"SMTP_USER={smtp_user or ''}", file=f)
         print(f"SMTP_PASSWORD={smtp_password or ''}", file=f)
-        print(f"EMAILS_FROM_EMAIL={emails_from_email or 'noreply@molar'}", file=f)
+        print(f"EMAILS_FROM_EMAIL={emails_from_email or 'noreply@molar.local'}", file=f)
         print(f"EMAILS_FROM_NAME={emails_from_name or ''}", file=f)
         print(f"BACKEND_PORT={backend_port}", file=f)
         print(f"BACKEND_NUM_WORKERS={backend_num_workers}", file=f)
