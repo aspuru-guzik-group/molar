@@ -31,10 +31,13 @@ class Client:
     def __init__(self, cfg: ClientConfig):
         self.cfg = cfg
         self.logger = logging.getLogger("molar")
+
         if self.logger:
             self.logger.setLevel(self.cfg.log_level)
+
         self.__headers: Dict[str, str] = {}
         self.__token: Optional[str] = None
+        self.__me: Optional[Dict[str, str]] = None
 
     @property
     def token(self):
@@ -57,6 +60,12 @@ class Client:
         if "User-Agent" not in self.__headers.keys():
             self.__headers["User-Agent"] = f"Molar v{molar.__version__}"
         return self.__headers
+
+    @property
+    def me(self):
+        if self.__me is None:
+            self.__me = self.get_user_by_email(self.cfg.email)
+        return self.__me
 
     def request(
         self,
@@ -109,7 +118,7 @@ class Client:
             method="POST",
             params={"database_name": self.cfg.database_name},
             data={
-                "username": self.cfg.username,
+                "username": self.cfg.email,
                 "password": self.cfg.password,
             },
         )
@@ -146,12 +155,17 @@ class Client:
     """
 
     def database_creation_request(
-        self, database_name: str, alembic_revisions: List[str]
+        self,
+        superuser_fullname: str,
+        alembic_revisions: List[str],
+        database_name: Optional[str] = None,
     ):
+        if database_name is None:
+            database_name = self.cfg.database_name
         databasemodel = {
             "database_name": database_name,
-            "superuser_fullname": self.cfg.fullname,
-            "superuser_email": self.cfg.username,
+            "superuser_fullname": superuser_fullname,
+            "superuser_email": self.cfg.email,
             "superuser_password": self.cfg.password,
             "alembic_revisions": alembic_revisions,
         }
@@ -161,13 +175,13 @@ class Client:
         return self.request(
             "/database/requests",
             method="GET",
-            headers=self.headers,
             return_pandas_dataframe=return_pandas_dataframe,
         )
 
     def get_database_information(self, return_pandas_dataframe=True):
         return self.request(
             "/database/information",
+            params={"database_name": self.cfg.database_name},
             method="GET",
             headers=self.headers,
             return_pandas_dataframe=return_pandas_dataframe,
@@ -211,7 +225,6 @@ class Client:
     # should it be possible to store data without type or vice versa
     def create_entry(
         self,
-        database_name: str,
         type: str,
         data: Dict[str, Any],
     ):
@@ -220,7 +233,7 @@ class Client:
             "data": data,
         }
         return self.request(
-            f"/eventstore/{database_name}",
+            f"/eventstore/{self.cfg.database_name}",
             method="POST",
             json=datum,
             headers=self.headers,
@@ -229,7 +242,6 @@ class Client:
 
     def update_entry(
         self,
-        database_name: str,
         uuid: UUID,
         type: str,
         data: Dict[str, Any],
@@ -240,7 +252,7 @@ class Client:
             "uuid": uuid,
         }
         return self.request(
-            f"/eventstore/{database_name}",
+            f"/eventstore/{self.cfg.database_name}",
             method="PATCH",
             json=datum,
             headers=self.headers,
@@ -249,7 +261,6 @@ class Client:
 
     def delete_entry(
         self,
-        database_name: str,
         uuid: UUID,
         type: str,
     ):
@@ -258,7 +269,7 @@ class Client:
             "uuid": uuid,
         }
         return self.request(
-            f"/eventstore/{database_name}",
+            f"/eventstore/{self.cfg.database_name}",
             method="DELETE",
             json=datum,
             headers=self.headers,
@@ -271,7 +282,6 @@ class Client:
 
     def query_database(
         self,
-        database_name: str,
         type: Union[str, List[str]],
         limit: Optional[int] = None,
         offset: Optional[int] = None,
@@ -288,7 +298,7 @@ class Client:
             "order_by": order_by,
         }
         return self.request(
-            f"/query/{database_name}",
+            f"/query/{self.cfg.database_name}",
             method="GET",
             headers=self.headers,
             json=json,
@@ -349,6 +359,7 @@ class Client:
         return self.request(
             f"/user/{email}",
             method="GET",
+            params={"database_name": self.cfg.database_name},
             headers=self.headers,
             return_pandas_dataframe=False,
         )
@@ -359,7 +370,7 @@ class Client:
         password: str,
         is_active: bool = False,
         is_superuser: bool = False,
-        full_name: Optional[str] = None,
+        full_name: str = None,
     ):
         user_create_model = {
             "email": email,
@@ -372,22 +383,21 @@ class Client:
         return self.request(
             "/user/add",
             json=user_create_model,
+            params={"database_name": self.cfg.database_name},
             method="POST",
             headers=self.headers,
         )
 
     def register_user(
         self,
+        full_name: str,
         email: Optional[EmailStr] = None,
         password: Optional[str] = None,
-        full_name: Optional[str] = None,
     ):
         if email is None:
             email = self.cfg.email
         if password is None:
             password = self.cfg.password
-        if full_name is None:
-            full_name = self.cfg.full_name
 
         user_register_model = {
             "full_name": full_name,
@@ -396,9 +406,9 @@ class Client:
         }
         return self.request(
             "/user/register",
+            params={"database_name": self.cfg.database_name},
             json=user_register_model,
             method="POST",
-            headers=self.headers,
         )
 
     def activate_user(
@@ -408,7 +418,7 @@ class Client:
         return self.request(
             "/user/activate",
             method="PATCH",
-            params={"email": email},
+            params={"email": email, "database_name": self.cfg.database_name},
             headers=self.headers,
         )
 
@@ -419,7 +429,7 @@ class Client:
         return self.request(
             "/user/deactivate",
             method="PATCH",
-            params={"email": email},
+            params={"email": email, "database_name": self.cfg.database_name},
             headers=self.headers,
         )
 
@@ -434,23 +444,21 @@ class Client:
             "/user/",
             method="PATCH",
             json=user,
+            params={"database_name": self.cfg.database_name},
             headers=self.headers,
             return_pandas_dataframe=False,
         )
 
     def update_password(
         self,
-        email: EmailStr,
-        old_password: str,
         new_password: str,
     ):
         return self.request(
-            "/user/password",
+            "/user/",
             method="PATCH",
             params={
-                "email": email,
-                "old_password": old_password,
-                "new_password": new_password,
+                "email": self.cfg.email,
+                "password": new_password,
             },
         )
 
@@ -472,6 +480,7 @@ class Client:
         return self.request(
             "/user/",
             method="PATCH",
+            params={"database_name": self.cfg.database_name},
             json=user_update_model,
             headers=self.headers,
             return_pandas_dataframe=False,
@@ -479,5 +488,8 @@ class Client:
 
     def delete_user(self, email: EmailStr):
         return self.request(
-            "/user/", method="DELETE", params={"email": email}, headers=self.headers
+            "/user/",
+            method="DELETE",
+            params={"email": email, "database_name": self.cfg.database_name},
+            headers=self.headers,
         )
