@@ -36,11 +36,6 @@ class Client:
         self.__headers: Dict[str, str] = {}
         self.__token: Optional[str] = None
 
-        # TODO need to perform some parsing
-        # TODO compare to the current client python/molar version
-        # if not (user_header == "molar v0.3 python v2.7.3"):
-        #     self.logger.debug("Current Client is out of date")
-
     @property
     def token(self):
         if self.__token is None:
@@ -84,7 +79,7 @@ class Client:
             data=data,
             headers=headers,
         )
-        
+
         if response.status_code == 500:
             raise MolarBackendError(status_code=500, message="Server Error")
 
@@ -110,7 +105,7 @@ class Client:
 
     def authenticate(self):
         response = self.request(
-            f"/login/access-token",
+            "/login/access-token",
             method="POST",
             params={"database_name": self.cfg.database_name},
             data={
@@ -169,7 +164,7 @@ class Client:
             headers=self.headers,
             return_pandas_dataframe=return_pandas_dataframe,
         )
-    
+
     def get_database_information(self, return_pandas_dataframe=True):
         return self.request(
             "/database/information",
@@ -203,7 +198,7 @@ class Client:
 
     def view_entries(
         self,
-        database_name: Optional[str]=None,
+        database_name: Optional[str] = None,
     ):
         database_name = database_name or self.cfg.database_name
         return self.request(
@@ -239,7 +234,7 @@ class Client:
         type: str,
         data: Dict[str, Any],
     ):
-        datum = {       
+        datum = {
             "type": "molecule",
             "data": data,
             "uuid": uuid,
@@ -270,19 +265,19 @@ class Client:
             return_pandas_dataframe=False,
         )
 
-    
     """
     QUERYING RELATED ACTIONS
     """
+
     def query_database(
         self,
         database_name: str,
         type: Union[str, List[str]],
-        limit: Optional[int]=None,
-        offset: Optional[int]=None,
-        joins: Optional[Union[List[schemas.QueryJoin], schemas.QueryJoin]]=None,
-        filters: Optional[Union[schemas.QueryFilter, schemas.QueryFilterList]]=None,
-        order_by: Optional[str]=None,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+        joins: Optional[Union[List[schemas.QueryJoin], schemas.QueryJoin]] = None,
+        filters: Optional[Union[schemas.QueryFilter, schemas.QueryFilterList]] = None,
+        order_by: Optional[str] = None,
     ):
         json = {
             "types": type,
@@ -350,7 +345,7 @@ class Client:
             return_pandas_dataframe=True,
         )
 
-    def get_user_by_email(self, email:EmailStr):
+    def get_user_by_email(self, email: EmailStr):
         return self.request(
             f"/user/{email}",
             method="GET",
@@ -381,17 +376,24 @@ class Client:
             method="POST",
             headers=self.headers,
         )
-    
+
     def register_user(
         self,
-        email: EmailStr,
-        password: str,
-        full_name: str,
+        email: Optional[EmailStr] = None,
+        password: Optional[str] = None,
+        full_name: Optional[str] = None,
     ):
+        if email is None:
+            email = self.cfg.email
+        if password is None:
+            password = self.cfg.password
+        if full_name is None:
+            full_name = self.cfg.full_name
+
         user_register_model = {
             "full_name": full_name,
             "email": email,
-            "password": password
+            "password": password,
         }
         return self.request(
             "/user/register",
@@ -399,7 +401,7 @@ class Client:
             method="POST",
             headers=self.headers,
         )
-    
+
     def activate_user(
         self,
         email: EmailStr,
@@ -410,7 +412,7 @@ class Client:
             params={"email": email},
             headers=self.headers,
         )
-    
+
     def deactivate_user(
         self,
         email: EmailStr,
@@ -421,14 +423,14 @@ class Client:
             params={"email": email},
             headers=self.headers,
         )
-    
+
     def update_superuser_rights(
         self,
         email: EmailStr,
         is_superuser: bool,
     ):
-        user =  self.get_user_by_email(email=email)
-        user["is_superuser"]=True
+        user = self.get_user_by_email(email=email)
+        user["is_superuser"] = True
         return self.request(
             "/user/",
             method="PATCH",
@@ -436,7 +438,7 @@ class Client:
             headers=self.headers,
             return_pandas_dataframe=False,
         )
-    
+
     def update_password(
         self,
         email: EmailStr,
@@ -450,7 +452,7 @@ class Client:
                 "email": email,
                 "old_password": old_password,
                 "new_password": new_password,
-            }
+            },
         )
 
     def update_user(
@@ -477,21 +479,8 @@ class Client:
             headers=self.headers,
             return_pandas_dataframe=False,
         )
-    
-    def delete_user(
-        self,
-        email: EmailStr
-    ):
+
+    def delete_user(self, email: EmailStr):
         return self.request(
-            "/user/",
-            method="DELETE",
-            params={"email": email},
-            headers=self.headers
+            "/user/", method="DELETE", params={"email": email}, headers=self.headers
         )
-
-    """
-    DEBUGGING
-    """
-
-    def test(self):
-        return self.request("/utils/test/api", method="GET")
