@@ -357,7 +357,6 @@ class Client:
         self,
         email: EmailStr,
         password: str,
-        organization: Optional[str] = None,
         is_active: bool = False,
         is_superuser: bool = False,
         full_name: Optional[str] = None,
@@ -459,7 +458,6 @@ class Client:
         self,
         email: EmailStr,
         password: Optional[str] = None,
-        organization: Optional[str] = None,
         is_active: Optional[bool] = False,
         is_superuser: bool = False,
         full_name: Optional[str] = None,
@@ -467,7 +465,6 @@ class Client:
         user_update_model = {
             "email": email,
             "password": password,
-            "organization": organization,
             "is_active": is_active,
             "is_superuser": is_superuser,
             "full_name": full_name,

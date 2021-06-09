@@ -12,7 +12,6 @@ class UserBase(BaseModel):
     is_superuser: bool = False
     is_active: bool = False
     full_name: Optional[str] = None
-    organization: Optional[str] = None
     created_on: Optional[datetime] = None
 
 
