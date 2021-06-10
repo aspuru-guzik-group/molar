@@ -7,10 +7,9 @@ from typing import Any, Dict, Optional
 
 @dataclass
 class ClientConfig:
-    username: str
+    email: str
     password: str
     database_name: str
-    fullname: str = "John or Jane Doe"
     log_level: str = "INFO"
     server_url: str = "http://localhost:8000"
     api_prefix: str = "/api/v1"

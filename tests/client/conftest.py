@@ -14,9 +14,8 @@ def client_factory(database_name="main"):
         server_url=os.getenv("SERVER_HOST") or "http://localhost:",
         api_prefix=os.getenv("API_PATH") or "/api/v1",
         database_name=database_name,
-        username="test@molar.tooth",
+        email="test@molar.tooth",
         password="tooth",
-        fullname="Tooth Fairy",
     )
     return Client(cfg)
 
