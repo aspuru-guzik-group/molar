@@ -5,6 +5,7 @@ from typing import Dict
 from pydantic import PostgresDsn
 import sqlalchemy
 
+from . import query
 from ..core.config import settings
 from .database_handler import DatabaseHandler
 

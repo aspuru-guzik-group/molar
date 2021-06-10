@@ -45,7 +45,13 @@ def create(
 ):
     if crud.eventstore is None:
         raise HTTPException(status_code=404, detail="Eventstore not found")
-    obj_out = crud.eventstore.create(db, obj_in=event, user_id=current_user.user_id)
+    try:
+        obj_out = crud.eventstore.create(db, obj_in=event, user_id=current_user.user_id)
+    except sqlalchemy.exc.IntegrityError as err:
+        if "psycopg2.errors.UniqueViolation" in str(err):
+            raise HTTPException(status_code=401, detail="Unique constraint violation!")
+        raise HTTPException(status_code=500, detail=str(err))
+
     return schemas.EventStore(
         uuid=obj_out.uuid,
         event=obj_out.event,
@@ -69,7 +75,7 @@ def update(
         obj_out = crud.eventstore.update(db, obj_in=event, user_id=current_user.user_id)
     except sqlalchemy.exc.InternalError as e:
         raise HTTPException(
-            status_code=404, detail="Event with uuid {event.uuid} not found!"
+            status_code=404, detail=f"Event with uuid {event.uuid} not found!"
         )
     return schemas.EventStore(
         uuid=obj_out.uuid,
@@ -90,7 +96,12 @@ def delete(
 ):
     if crud.eventstore is None:
         raise HTTPException(status_code=404, detail="Eventstore not found")
-    obj_out = crud.eventstore.delete(db, obj_in=event, user_id=current_user.user_id)
+    try:
+        obj_out = crud.eventstore.delete(db, obj_in=event, user_id=current_user.user_id)
+    except sqlalchemy.exc.InternalError as err:
+        if "psycopg2.errors.NoDataFound" in str(err):
+            raise HTTPException(status_code=404, detail="Data not found")
+        raise HTTPException(status_code=500, detail=str(err))
     return schemas.EventStore(
         uuid=obj_out.uuid,
         event=obj_out.event,

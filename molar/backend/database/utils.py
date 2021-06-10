@@ -31,14 +31,14 @@ def sqlalchemy_to_dict(
                     name = attr.key
                     if name in exclude:
                         continue
-                    if add_table_name:
-                        name = f"{mapper.tables[0].name}.{name}"
                     value = getattr(result, name, None)
                     if value is None:
                         continue
                     column = attr.columns[0]
                     if isinstance(column.type, postgresql.base.UUID):
                         value = UUID(value)
+                    if add_table_name:
+                        name = f"{mapper.tables[0].name}.{name}"
                 fields[name] = value
         return fields
     elif isinstance(model, orm.attributes.InstrumentedAttribute):

@@ -1,5 +1,4 @@
 # std
-from datetime import datetime
 from typing import List
 
 # external
@@ -13,7 +12,6 @@ from molar import install
 from molar.backend import alembic_utils, database, schemas
 from molar.backend.api import deps
 from molar.backend.core.config import settings
-from molar.backend.core.security import get_password_hash
 from molar.backend.crud import CRUDInterface
 from molar.backend.database.query import INFORMATION_QUERY
 from molar.backend.utils import send_database_created_email
@@ -52,7 +50,7 @@ def get_database_requests(
 
 
 @router.get("/information", response_model=List[schemas.DatabaseInformation])
-def get_database_information(   
+def get_database_information(
     db: Session = Depends(deps.get_db),
     current_user=Depends(deps.get_current_active_user),
 ):
@@ -101,10 +99,7 @@ def approve_database(
             detail=f"There was an issue during the alembic migration: {str(err)}",
         )
     except sqlalchemy.exc.ProgrammingError as err:
-        raise HTTPException(
-                status_code=400,
-                detail="Database already exists!"
-        )
+        raise HTTPException(status_code=400, detail="Database already exists!")
 
     if settings.EMAILS_ENABLED:
         send_database_created_email(

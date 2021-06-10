@@ -87,6 +87,8 @@ def register_a_new_user(
     db: Session = Depends(deps.get_db),
     crud: CRUDInterface = Depends(deps.get_crud),
 ):
+    if crud is None:
+        raise HTTPException(status_code=404, detail="Database not found!")
     obj_in = schemas.UserCreate(
         full_name=user_in.full_name,
         email=user_in.email,
@@ -95,8 +97,7 @@ def register_a_new_user(
         is_superuser=False,
     )
     try:
-        db_obj = crud.user.create(db, obj_in=obj_in)
-        # crud.user.deactivate(db, db_obj=db_obj)
+        crud.user.create(db, obj_in=obj_in)
     except sqlalchemy.exc.IntegrityError:
         raise HTTPException(status_code=401, detail="This username is already taken.")
     if settings.EMAILS_ENABLED:
@@ -119,16 +120,7 @@ def activate_user(
     db_obj = crud.user.get_by_email(db, email=email)
     if not db_obj:
         raise HTTPException(status_code=404, detail="User not found")
-    resp = crud.user.activate(db, db_obj=db_obj)
-    # if resp.is_active:
-    #     raise HTTPException(status_code=404, detail="is_active is True")
-    # return {
-    #     "email": resp.email,
-    #     "full_name": resp.full_name,
-    #     "created_on": resp.created_on,
-    #     "is_active": resp.is_active,
-    #     "is_superuser": resp.is_superuser,
-    # }
+    crud.user.activate(db, db_obj=db_obj)
     return {"msg": f"User {email} is now active!"}
 
 
@@ -143,14 +135,7 @@ def deactivate_user(
     db_obj = crud.user.get_by_email(db, email=email)
     if not db_obj:
         raise HTTPException(status_code=404, detail="User not found")
-    updated = crud.user.deactivate(db, db_obj=db_obj)
-    # return {
-    #     "email": updated.email,
-    #     "full_name": updated.full_name,
-    #     "created_on": updated.created_on,
-    #     "is_activate": updated.is_active,
-    #     "is_superuser": updated.is_superuser,
-    # }
+    crud.user.deactivate(db, db_obj=db_obj)
     return {"msg": f"User {email} is now deactivated!"}
 
 
