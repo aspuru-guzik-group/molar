@@ -61,6 +61,8 @@ def load_config(
         )
         exit(1)
 
+    ctx.obj["data_dir"] = data_dir
+    ctx.obj["env_file"] = env_file
     config = dotenv_values(env_file)
     ctx.obj["env"] = config
     ctx.obj["sql_url"] = PostgresDsn.build(
