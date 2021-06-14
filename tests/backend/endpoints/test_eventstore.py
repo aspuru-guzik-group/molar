@@ -1,3 +1,7 @@
+# std
+from datetime import datetime
+
+
 class TestEventStore:
     def test_create_eventstore(self, client, new_database_headers):
         out = client.post(
@@ -56,4 +60,23 @@ class TestEventStore:
         assert out.status_code == 200
 
     def test_rollback_eventstore(self, client, new_database_headers):
-        pass
+        out = client.patch(
+            "/api/v1/eventstore/rollback/test_database",
+            params={"before": str(datetime(1980, 1, 1, 16, 30))},
+            headers=new_database_headers,
+        )
+
+        assert out.status_code == 200
+        out = client.get(
+            "/api/v1/eventstore/test_database", headers=new_database_headers
+        )
+        events = out.json()
+        len(events) == 0
+
+    def test_user_id_alembic_notnull(self, client, new_database_headers):
+        out = client.get(
+            "/api/v1/eventstore/test_database", headers=new_database_headers
+        )
+        events = out.json()
+        assert events[0]["alembic_version"] is not None
+        assert events[0]["user_id"] is not None

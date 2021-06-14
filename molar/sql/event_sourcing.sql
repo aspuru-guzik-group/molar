@@ -183,11 +183,12 @@ begin
 
     -- removing everything that has not been removed yet
     insert into sourcing.eventstore 
-       ("event", "type", "uuid", "timestamp") (
+       ("event", "type", "uuid", "timestamp", "user_id") (
             select 'delete' as "event",
                    "type",
                    "uuid", 
-                   new.timestamp as "timestamp"
+                   new.timestamp as "timestamp",
+                   new.user_id as "user_id"
               from sourcing.eventstore 
           group by "uuid", "type" 
             having not (array_agg("event") @> '{delete}' 
@@ -213,9 +214,9 @@ begin
                                "type", 
                                "uuid", 
                                "data", 
+                               %L  as "timestamp",
                                "alembic_version",
-                               "user_id",
-                               %L  as "timestamp"
+                               "user_id"
 		                  from "sourcing"."eventstore"
     		             where %s
 		              order by "eventstore"."timestamp" asc)',
@@ -256,8 +257,8 @@ begin
     when 'rollback' then
         execute (select sourcing.on_rollback_query(new));
         insert into sourcing.eventstore 
-            ("event", "data", "timestamp")
-     values ('rollback-end', new.data, new.timestamp);
+            ("event", "data", "timestamp", "user_id", "alembic_version")
+     values ('rollback-end', new.data, new.timestamp, new.user_id, new.alembic_version);
         new.event := 'rollback-begin';
     else
         raise unique_violation using message = format('Invalid event type: %L', new.event);

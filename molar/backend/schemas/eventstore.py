@@ -1,7 +1,7 @@
 # std
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 # external
@@ -13,17 +13,22 @@ class EventTypes(str, Enum):
     update = "update"
     delete = "delete"
     rollback = "rollback"
+    rollback_begin = "rollback-begin"
+    rollback_end = "rollback-end"
 
 
 class EventStoreBase(BaseModel):
-    type: str
+    type: Optional[str]
 
 
 class EventStore(EventStoreBase):
+    id: Optional[int]
     uuid: Optional[UUID]
     event: EventTypes
     data: Dict[str, Any]
     timestamp: Optional[datetime]
+    alembic_version: Optional[List[str]]
+    user_id: Optional[int]
 
 
 class EventStoreCreate(EventStoreBase):

@@ -1,3 +1,6 @@
+# std
+from datetime import datetime
+
 # external
 from sqlalchemy.orm import Session
 
@@ -48,5 +51,11 @@ class CRUDEventStore(CRUDBase[ModelType, EventStoreCreate, EventStoreUpdate]):
         db.refresh(db_obj)
         return db_obj
 
-    def rollback(self, db: Session):
-        pass
+    def rollback(self, db: Session, *, before: datetime, user_id: int):
+        db_obj = self.model(
+            event="rollback", data={"before": str(before)}, user_id=user_id
+        )
+        db.add(db_obj)
+        db.commit()
+        db.refresh(db_obj)
+        return db_obj
