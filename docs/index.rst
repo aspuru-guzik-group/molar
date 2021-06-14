@@ -16,7 +16,7 @@ It consists of a REST API implemented (using `FastAPI <https://fastapi.tiangolo.
  - Event sourcing to be sure not to lose any data
  - Client integrated with `PyData's pandas <https://pandas.pydata.org>`_
  - Support to have different database structure, thanks to `Alembic <https://alembic.sqlalchemy.org/en/latest/>`_
- - Ease of deployment (can be deployed in 2 command lines!).
+ - Ease of deployment (Deployed in 2 command lines!).
 
 
 .. toctree::
