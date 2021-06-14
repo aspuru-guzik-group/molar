@@ -108,6 +108,53 @@ class TestQuery:
         assert "molecule.smiles" in data[0].keys()
         assert "molecule_type.name" in data[0].keys()
 
+    def test_aliased_query(self, client, new_database_headers):
+        out = client.get(
+            "/api/v1/query/test_database",
+            headers=new_database_headers,
+            json={
+                "types": "aliased_molecule",
+                "aliases": {"alias": "aliased_molecule", "type": "molecule"},
+            },
+        )
+        assert out.status_code == 200
+
+        # Alias of a table
+        out = client.get(
+            "/api/v1/query/test_database",
+            headers=new_database_headers,
+            json={
+                "alises": {"type": "molecule_type", "alias": "asdf"},
+                "types": ["molecule", "asdf"],
+                "joins": "asdf",
+            },
+        )
+
+        # Alias of a column
+        out = client.get(
+            "/api/v1/query/test_database",
+            headers=new_database_headers,
+            json={
+                "aliases": {"type": "molecule_type", "alias": "asdf"},
+                "types": ["molecule", "asdf.name"],
+                "joins": "asdf",
+            },
+        )
+
+        # alias of a json field
+        out = client.get(
+            "/api/v1/query/test_database",
+            headers=new_database_headers,
+            json={
+                "aliases": {"type": "molecule", "alias": "test"},
+                "types": [
+                    "test.metadata.test",
+                    "molecule_type.name",
+                ],
+                "joins": {"type": "molecule_type"},
+            },
+        )
+
     def test_query_with_json_field(self, client, new_database_headers):
         out = client.get(
             "/api/v1/query/test_database",
@@ -216,7 +263,7 @@ class TestQuery:
             "/api/v1/query/test_database",
             headers=new_database_headers,
             json={
-                "types": "calculation",
+                "types": ["calculation", "conformer"],
                 "joins": [
                     {
                         "type": "conformer",
@@ -237,26 +284,34 @@ class TestQuery:
         )
         assert out.status_code == 400
 
+    def test_ambiguous_joins2(self, client, new_database_headers):
         out = client.get(
             "/api/v1/query/test_database",
             headers=new_database_headers,
             json={
-                "types": "calculation",
+                "aliases": [
+                    {"type": "conformer", "alias": "initial_conformer"},
+                    {"type": "conformer", "alias": "output_conformer"},
+                ],
+                "types": [
+                    "initial_conformer",
+                    "output_conformer",
+                    "calculation",
+                ],
                 "joins": [
                     {
-                        "type": "conformer",
+                        "type": "initial_conformer",
                         "on": {
-                            "column1": "conformer.conformer_id",
+                            "column1": "initial_conformer.conformer_id",
                             "column2": "calculation.conformer_id",
                         },
                     },
                     {
-                        "type": "conformer",
+                        "type": "output_conformer",
                         "on": {
-                            "column1": "conformer.conformer_id",
+                            "column1": "output_conformer.conformer_id",
                             "column2": "calculation.output_conformer_id",
                         },
-                        "alias": "output_conformer",
                     },
                 ],
             },

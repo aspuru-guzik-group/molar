@@ -1,5 +1,5 @@
 # std
-from typing import List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 # external
 import pkg_resources
@@ -15,36 +15,65 @@ INFORMATION_QUERY = open(
 ).read()
 
 
-def resolve_type(type: str, models):
-    type = type.split(".")
-    if len(type) == 1:
-        # if json
+def resolve_type(type: str, models, alias_registry=None):
+    if alias_registry is None:
+        alias_registry = {}
+
+    types = type.split(".")
+
+    if len(types) == 1:
         if isinstance(models, sqlalchemy.orm.attributes.InstrumentedAttribute):
-            return models[type[0]].astext
-        type_ = getattr(models, type[0], None)
-        if type_ is None:
-            raise ValueError(f"Type {type} not found in database!")
-        return type_
-    models = getattr(models, type[0], None)
-    return resolve_type(".".join(type[1:]), models)
+            return models[types[0]].astext
+
+        type_ = getattr(models, types[0], None)
+        if type_ is not None:
+            return type_
+
+        if types[0] in alias_registry.keys():
+            return alias_registry[types[0]]
+
+        raise ValueError(f"Type {type} not found in database!")
+
+    submodel = getattr(models, types[0], None)
+
+    if submodel is None and types[0] in alias_registry.keys():
+        submodel = alias_registry[types[0]]
+
+    if submodel is not None:
+        return resolve_type(".".join(types[1:]), submodel, alias_registry)
+    raise ValueError(f"Type {type} not found in database!")
 
 
 def query_builder(
     db: Session,
     models,
-    types: Union[str, List[str]],
+    types: schemas.QueryTypes,
     limit: int,
     offset: int,
-    joins: Optional[Union[List[schemas.QueryJoin], schemas.QueryJoin]] = None,
-    filters: Optional[Union[schemas.QueryFilter, schemas.QueryFilterList]] = None,
-    order_by: Optional[Union[str, List[str]]] = None,
+    joins: Optional[schemas.QueryJoins] = None,
+    filters: Optional[schemas.QueryFilters] = None,
+    order_by: Optional[schemas.QueryOrderBys] = None,
+    aliases: Optional[schemas.QueryAliases] = None,
 ):
+    alias_registry: Dict[str, Any] = {}
+
+    # Resolving aliases
+    if aliases is not None:
+        if not isinstance(aliases, list):
+            aliases = [aliases]
+
+        for alias in aliases:
+            alias_registry[alias.alias] = aliased(
+                resolve_type(alias.type, models), name=alias.alias
+            )
+
+    # Resolving main types
     if not isinstance(types, list):
         types = [types]
 
     db_objs = []
     for type_ in types:
-        db_obj = resolve_type(type_, models)
+        db_obj = resolve_type(type_, models, alias_registry)
         db_objs.append(db_obj)
 
     query = db.query(*db_objs)
@@ -53,14 +82,16 @@ def query_builder(
         if not isinstance(joins, list):
             joins = [joins]
         for join in joins:
-            joined_table = resolve_type(join.type, models)
-            if join.alias is not None:
-                joined_table = aliased(joined_table, name=join.alias)
+            joined_table = resolve_type(
+                join.type,
+                models,
+                alias_registry,
+            )
             onclause = None
             if join.on is not None:
-                onclause = resolve_type(join.on.column1, models) == resolve_type(
-                    join.on.column2, models
-                )
+                onclause = resolve_type(
+                    join.on.column1, models, alias_registry
+                ) == resolve_type(join.on.column2, models, alias_registry)
 
             query = query.join(
                 joined_table,
@@ -70,13 +101,20 @@ def query_builder(
             )
 
     if filters is not None:
-        filters = expand_filters(filters, models)
+        filters = expand_filters(filters, models, alias_registry)
         query = query.filter(filters)
 
     if order_by is not None:
         if not isinstance(order_by, list):
             order_by = [order_by]
-        query.order_by([resolve_type(t) for t in order_by])
+        order_bys = []
+        for ob in order_by:
+            t = resolve_type(ob.type, models, alias_registry)
+            if ob.order == "asc":
+                order_bys.append(t.asc())
+            else:
+                order_bys.append(t.desc())
+        query = query.order_by(*order_bys)
 
     query_results = query.offset(offset).limit(limit).all()
 
@@ -92,7 +130,7 @@ def query_builder(
     return results
 
 
-def expand_filters(filters, models):
+def expand_filters(filters, models, alias_registry):
     if isinstance(filters, schemas.QueryFilterList):
         filters = [expand_filters(f) for f in filters.filters]
         if filters.op == "and":
@@ -103,7 +141,7 @@ def expand_filters(filters, models):
             raise ValueError(f"Filter operator not supported: {filters.op}")
 
     elif isinstance(filters, schemas.QueryFilter):
-        type = resolve_type(filters.type, models)
+        type = resolve_type(filters.type, models, alias_registry)
         operator = filters.op
         if filters.op == "==":
             operator = "__eq__"
@@ -122,7 +160,7 @@ def expand_filters(filters, models):
         value = filters.value
         if isinstance(value, str):
             try:
-                value_type = resolve_type(value, models)
+                value_type = resolve_type(value, models, alias_registry)
             except ValueError:
                 pass
             else:

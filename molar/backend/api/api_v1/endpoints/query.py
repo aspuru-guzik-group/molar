@@ -17,26 +17,29 @@ router = APIRouter()
 @router.get("/{database_name}", response_model=List[Dict[str, Any]])
 def query(
     database_name: str,
-    types: Union[str, List[str]],
+    types: schemas.QueryTypes,
     limit: int = 10,
     offset: int = 0,
-    joins: Optional[Union[List[schemas.QueryJoin], schemas.QueryJoin]] = None,
-    filters: Optional[Union[schemas.QueryFilter, schemas.QueryFilterList]] = None,
+    joins: Optional[schemas.QueryJoins] = None,
+    filters: Optional[schemas.QueryFilters] = None,
+    aliases: Optional[schemas.QueryAliases] = None,
     db: Session = Depends(deps.get_db),
     models=Depends(deps.get_models),
     current_user=Depends(deps.get_current_active_user),
-    order_by: Optional[Union[str, List[str]]] = None,
+    order_by: Optional[schemas.QueryOrderBys] = None,
 ):
     if db is None:
         raise HTTPException(status_code=404, detail="Database not found!")
     try:
         query = query_builder(
-            db, models, types, limit, offset, joins, filters, order_by
+            db, models, types, limit, offset, joins, filters, order_by, aliases
         )
     except ValueError as err:
         raise HTTPException(status_code=400, detail=str(err))
+
     except sqlalchemy.exc.AmbiguousForeignKeysError as err:
         raise HTTPException(status_code=400, detail=str(err))
+
     except sqlalchemy.exc.ProgrammingError as err:
         if "specified more than once":
             raise HTTPException(

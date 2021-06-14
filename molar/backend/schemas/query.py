@@ -32,6 +32,16 @@ class LogicalOperators(str, Enum):
     or_ = "or"
 
 
+class OrderEnum(str, Enum):
+    asc = "asc"
+    desc = "desc"
+
+
+class QueryAlias(BaseModel):
+    type: str
+    alias: str
+
+
 class QueryJoinOnClause(BaseModel):
     column1: str
     column2: str
@@ -41,7 +51,6 @@ class QueryJoin(BaseModel):
     type: str
     join_type: JoinType = JoinType.inner
     on: Optional[QueryJoinOnClause] = None
-    alias: Optional[str] = None
 
 
 class QueryFilter(BaseModel):
@@ -55,4 +64,15 @@ class QueryFilterList(BaseModel):
     filters: List[Union[QueryFilter, "QueryFilterList"]]
 
 
+class QueryOrderBy(BaseModel):
+    type: str
+    order: OrderEnum = "asc"
+
+
 QueryFilterList.update_forward_refs()
+
+QueryTypes = Union[str, List[str]]
+QueryAliases = Union[QueryAlias, List[QueryAlias]]
+QueryJoins = Union[List[QueryJoin], QueryJoin]
+QueryFilters = Union[QueryFilter, QueryFilterList]
+QueryOrderBys = Union[QueryOrderBy, List[QueryOrderBy]]

@@ -7,6 +7,7 @@ from uuid import UUID
 # external
 from fastapi import HTTPException
 from jose import jwt
+import numpy as np
 import pandas as pd
 from pydantic import BaseModel, EmailStr
 import requests
@@ -100,7 +101,8 @@ class Client:
             )
 
         if return_pandas_dataframe:
-            return pd.DataFrame.from_records(out)
+            df = pd.DataFrame.from_records(out)
+            return df.replace({np.nan: None})
 
         if out is not None and "msg" in out.keys():
             self.logger.info(out["msg"])
@@ -276,24 +278,35 @@ class Client:
             return_pandas_dataframe=False,
         )
 
+    def rollback(self, before: datetime):
+        return self.request(
+            f"/eventstore/rollback/{self.cfg.database_name}",
+            method="PATCH",
+            params={"database_name": self.cfg.database_name, "before": str(before)},
+            headers=self.headers,
+            return_pandas_dataframe=False,
+        )
+
     """
     QUERYING RELATED ACTIONS
     """
 
     def query_database(
         self,
-        type: Union[str, List[str]],
+        types: schemas.QueryTypes,
         limit: Optional[int] = None,
         offset: Optional[int] = None,
-        joins: Optional[Union[List[schemas.QueryJoin], schemas.QueryJoin]] = None,
-        filters: Optional[Union[schemas.QueryFilter, schemas.QueryFilterList]] = None,
-        order_by: Optional[str] = None,
+        joins: Optional[schemas.QueryJoins] = None,
+        filters: Optional[schemas.QueryFilters] = None,
+        order_by: Optional[schemas.QueryOrderBys] = None,
+        aliases: Optional[schemas.QueryAliases] = None,
     ):
         json = {
-            "types": type,
+            "types": types,
             "limit": limit,
             "offset": offset,
             "joins": joins,
+            "aliases": aliases,
             "filters": filters,
             "order_by": order_by,
         }
@@ -351,6 +364,7 @@ class Client:
         return self.request(
             "/user/",
             method="GET",
+            params={"database_name": self.cfg.database_name},
             headers=self.headers,
             return_pandas_dataframe=True,
         )
