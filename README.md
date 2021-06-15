@@ -1,30 +1,37 @@
-![test](https://gitlab.com/tgaudin/goldmine/badges/%{default_branch}/pipeline.svg) ![coverage](https://gitlab.com/tgaudin/goldmine/badges/%{default_branch}/coverage.svg)
+# Molar 🦷
 
-# Molar :tooth:
+Molar is a database management system for PostgreSQL. Its main focus is to enable chemists and material scientist to store the results of their experiment, whether exprimental or not!
 
-Molar is a database management system that aims to make it easy to handle chemical data.
+It consists of a REST API (implemented using FastAPI) and a python client. ITs main features are:
 
-## Installing the client
+ - Creation / deletion of database o nuser request
+ - User management per database (using JWT tokens and OAuth2)
+ - Event sourcing to be sure not to lose any data
+ - Client integrates with [PyData's pandas](https://pandas.pydata.org)
+ - Support to have different database structure, thanks to [Alembic](https://alembic.sqlalchemy.org)
+ - Easy to deploy (you just need 2 command lines, `using docker-compose`)
 
-If you have git and python installed, it's as easy as:
+## Docs
 
-```bash
-$ git clone git@gitlab.com:tgaudin/goldmine.git
-cd goldmine && pip install -e .
+[See on readthedocs](https://molar.readthedocs.io)
+
+
+ ## Installation
+
+You can install the package through PYPI.
+
+ ```bash
+  $ pip install molar
+ ```
+
+ If you want to install the backend, you will need extra dependancies.
+
+ ```bash
+  $ pip install molar[backend]
+ ```
+
+ Molar ships with a command line interface that makes it easy to deploy, all you need to do is (providing docker is already installed):
+
+ ```bash
+  $ molarcli install local
 ```
-
-## Using the client
-
-
-## Backend
-
-To run the backend there are two possibilities: either run the docker image we prepared or install it directly on the machine. 
-
-The first options is easier, but the second options will give you more flexibility in term of configuration and infrastructure.
-
-### Installing the backend with Docker
-...
-
-### Installing the backend without Docker
-
-...
