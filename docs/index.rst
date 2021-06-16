@@ -20,10 +20,9 @@ It consists of a REST API implemented (using `FastAPI <https://fastapi.tiangolo.
 
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 0
    :caption: Contents:
    
-   index.rst
    02_client_usage.ipynb
    03_backend_usage.ipynb
    04_client_api.rst
