@@ -4,7 +4,7 @@
    contain the root `toctree` directive.
 
 *********
-Molar 🦷
+Overview
 *********
 
 Molar (for Molecule Library) is a database management system for PostgreSQL. Its main focus is to enable chemists and material scientists to store the results of their experiment, whether computational or not!
@@ -23,6 +23,7 @@ It consists of a REST API implemented (using `FastAPI <https://fastapi.tiangolo.
    :maxdepth: 2
    :caption: Contents:
    
+   index.rst
    02_client_usage.ipynb
    03_backend_usage.ipynb
    04_client_api.rst

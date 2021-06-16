@@ -116,8 +116,11 @@ def query_builder(
                 order_bys.append(t.desc())
         query = query.order_by(*order_bys)
 
-    query_results = query.offset(offset).limit(limit).all()
+    query = query.offset(offset).limit(limit)
+    return query, db_objs, types
 
+
+def process_query_output(db_objs, query_results, types):
     if len(db_objs) == 1:
         return [sqlalchemy_to_dict(db_objs[0], r, types[0]) for r in query_results]
 

@@ -104,7 +104,7 @@ class Client:
             df = pd.DataFrame.from_records(out)
             return df.replace({np.nan: None})
 
-        if out is not None and "msg" in out.keys():
+        if out is not None and isinstance(out, dict) and "msg" in out.keys():
             self.logger.info(out["msg"])
             return out
 
@@ -316,6 +316,35 @@ class Client:
             headers=self.headers,
             json=json,
             return_pandas_dataframe=True,
+        )
+
+    def debug_query(
+        self,
+        types: schemas.QueryTypes,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+        joins: Optional[schemas.QueryJoins] = None,
+        filters: Optional[schemas.QueryFilters] = None,
+        order_by: Optional[schemas.QueryOrderBys] = None,
+        aliases: Optional[schemas.QueryAliases] = None,
+        explain_analyze: bool = False,
+    ):
+        json = {
+            "types": types,
+            "limit": limit,
+            "offset": offset,
+            "joins": joins,
+            "aliases": aliases,
+            "filters": filters,
+            "order_by": order_by,
+        }
+        return self.request(
+            f"/query/debug/{self.cfg.database_name}",
+            method="GET",
+            headers=self.headers,
+            params={"explain_analyze": explain_analyze},
+            json=json,
+            return_pandas_dataframe=False,
         )
 
     """

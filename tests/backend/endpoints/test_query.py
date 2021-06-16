@@ -317,3 +317,19 @@ class TestQuery:
             },
         )
         assert out.status_code == 200
+
+    def test_debug_query(self, client, new_database_headers):
+        datum = {"types": ["calculation", "software"], "joins": {"type": "software"}}
+        out = client.get(
+            "/api/v1/query/debug/test_database",
+            headers=new_database_headers,
+            json=datum,
+        )
+        assert out.status_code == 200
+
+        out = client.get(
+            "/api/v1/query/debug/test_database",
+            headers=new_database_headers,
+            json=datum,
+            params={"explain_analyze": True},
+        )
