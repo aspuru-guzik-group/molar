@@ -13,7 +13,7 @@ It consists of a REST API (implemented using FastAPI) and a python client. ITs m
 
 ## Docs
 
-[See on readthedocs](https://molar.readthedocs.io)
+[See here](https://molar.readthedocs.io)
 
 
  ## Installation
@@ -32,6 +32,6 @@ You can install the package through PYPI.
 
  Molar ships with a command line interface that makes it easy to deploy, all you need to do is (providing docker is already installed):
 
- ```bash
+```bash
   $ molarcli install local
 ```
