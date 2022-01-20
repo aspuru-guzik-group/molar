@@ -135,10 +135,11 @@ def process_query_output(db_objs, query_results, types):
 
 def expand_filters(filters, models, alias_registry):
     if isinstance(filters, schemas.QueryFilterList):
-        filters = [expand_filters(f) for f in filters.filters]
-        if filters.op == "and":
+        op = filters.op
+        filters = [expand_filters(f, models, alias_registry) for f in filters.filters]
+        if op == "and":
             return sqlalchemy.and_(*filters)
-        elif filters.op == "or":
+        elif op == "or":
             return sqlalchemy.or_(*filters)
         else:
             raise ValueError(f"Filter operator not supported: {filters.op}")
