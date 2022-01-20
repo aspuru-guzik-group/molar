@@ -15,8 +15,10 @@ from molar.backend.database.query import process_query_output, query_builder
 router = APIRouter()
 
 
-@router.get("/{database_name}", response_model=List[Dict[str, Any]])
 def query(
+    db,
+    models,
+    current_user,
     database_name: str,
     types: schemas.QueryTypes,
     limit: int = 10,
@@ -24,9 +26,6 @@ def query(
     joins: Optional[schemas.QueryJoins] = None,
     filters: Optional[schemas.QueryFilters] = None,
     aliases: Optional[schemas.QueryAliases] = None,
-    db: Session = Depends(deps.get_db),
-    models=Depends(deps.get_models),
-    current_user=Depends(deps.get_current_active_user),
     order_by: Optional[schemas.QueryOrderBys] = None,
 ):
     if db is None:
@@ -52,18 +51,17 @@ def query(
     return records
 
 
-@router.get("/debug/{database_name}", response_model=str)
 def debug_query(
+    db,
+    models,
+    current_user,
     database_name: str,
     types: schemas.QueryTypes,
     limit: int = 10,
     offset: int = 0,
     joins: Optional[schemas.QueryJoins] = None,
-    fitlers: Optional[schemas.QueryFilters] = None,
+    filters: Optional[schemas.QueryFilters] = None,
     aliases: Optional[schemas.QueryAliases] = None,
-    db: Session = Depends(deps.get_db),
-    models=Depends(deps.get_models),
-    current_user=Depends(deps.get_current_active_user),
     order_by: Optional[schemas.QueryOrderBys] = None,
     explain_analyze: bool = False,
 ):
@@ -71,7 +69,7 @@ def debug_query(
         raise HTTPException(status_code=404, detail="Database not found!")
 
     query, _, _ = query_builder(
-        db, models, types, limit, offset, joins, fitlers, order_by, aliases
+        db, models, types, limit, offset, joins, filters, order_by, aliases
     )
     statement = str(
         query.statement.compile(
@@ -84,3 +82,123 @@ def debug_query(
     statement = f"explain analyze {statement}"
     result = db.execute(statement)
     return "\n".join([res[0] for res in result.all()])
+
+
+@router.get("/{database_name}", response_model=List[Dict[str, Any]])
+def get_query(
+    database_name: str,
+    types: schemas.QueryTypes,
+    limit: int = 10,
+    offset: int = 0,
+    joins: Optional[schemas.QueryJoins] = None,
+    filters: Optional[schemas.QueryFilters] = None,
+    aliases: Optional[schemas.QueryAliases] = None,
+    db: Session = Depends(deps.get_db),
+    models=Depends(deps.get_models),
+    current_user=Depends(deps.get_current_active_user),
+    order_by: Optional[schemas.QueryOrderBys] = None,
+):
+    return query(
+        db,
+        models,
+        current_user,
+        database_name,
+        types,
+        limit,
+        offset,
+        joins,
+        filters,
+        aliases,
+        order_by,
+    )
+
+
+@router.post("/{database_name}", response_model=List[Dict[str, Any]])
+def post_query(
+    database_name: str,
+    types: schemas.QueryTypes,
+    limit: int = 10,
+    offset: int = 0,
+    joins: Optional[schemas.QueryJoins] = None,
+    filters: Optional[schemas.QueryFilters] = None,
+    aliases: Optional[schemas.QueryAliases] = None,
+    db: Session = Depends(deps.get_db),
+    models=Depends(deps.get_models),
+    current_user=Depends(deps.get_current_active_user),
+    order_by: Optional[schemas.QueryOrderBys] = None,
+):
+    return query(
+        db,
+        models,
+        current_user,
+        database_name,
+        types,
+        limit,
+        offset,
+        joins,
+        filters,
+        aliases,
+        order_by,
+    )
+
+
+@router.get("/debug/{database_name}", response_model=str)
+def get_debug_query(
+    database_name: str,
+    types: schemas.QueryTypes,
+    limit: int = 10,
+    offset: int = 0,
+    joins: Optional[schemas.QueryJoins] = None,
+    filters: Optional[schemas.QueryFilters] = None,
+    aliases: Optional[schemas.QueryAliases] = None,
+    db: Session = Depends(deps.get_db),
+    models=Depends(deps.get_models),
+    current_user=Depends(deps.get_current_active_user),
+    order_by: Optional[schemas.QueryOrderBys] = None,
+    explain_analyze: bool = False,
+):
+    return debug_query(
+        db,
+        models,
+        current_user,
+        database_name,
+        types,
+        limit,
+        offset,
+        joins,
+        filters,
+        aliases,
+        order_by,
+        explain_analyze,
+    )
+
+
+@router.post("/debug/{database_name}", response_model=str)
+def post_debug_query(
+    database_name: str,
+    types: schemas.QueryTypes,
+    limit: int = 10,
+    offset: int = 0,
+    joins: Optional[schemas.QueryJoins] = None,
+    filters: Optional[schemas.QueryFilters] = None,
+    aliases: Optional[schemas.QueryAliases] = None,
+    db: Session = Depends(deps.get_db),
+    models=Depends(deps.get_models),
+    current_user=Depends(deps.get_current_active_user),
+    order_by: Optional[schemas.QueryOrderBys] = None,
+    explain_analyze: bool = False,
+):
+    return debug_query(
+        db,
+        models,
+        current_user,
+        database_name,
+        types,
+        limit,
+        offset,
+        joins,
+        filters,
+        aliases,
+        order_by,
+        explain_analyze,
+    )
