@@ -91,7 +91,9 @@ class Client:
         )
 
         if response.status_code == 500:
-            raise MolarBackendError(status_code=500, message="Server Error")
+            raise MolarBackendError(
+                status_code=500, message=f"Server Error: {response.text}"
+            )
 
         out = response.json()
 
@@ -249,7 +251,7 @@ class Client:
         data: Dict[str, Any],
     ):
         datum = {
-            "type": "molecule",
+            "type": type,
             "data": data,
             "uuid": uuid,
         }

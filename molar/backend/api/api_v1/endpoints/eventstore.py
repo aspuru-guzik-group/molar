@@ -81,9 +81,7 @@ def update(
     try:
         obj_out = crud.eventstore.update(db, obj_in=event, user_id=current_user.user_id)
     except sqlalchemy.exc.InternalError as e:
-        raise HTTPException(
-            status_code=404, detail=f"Event with uuid {event.uuid} not found!"
-        )
+        raise HTTPException(status_code=500, detail=f"Error: {e}")
     return schemas.EventStore(
         id=obj_out.id,
         uuid=obj_out.uuid,
