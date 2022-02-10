@@ -303,10 +303,9 @@ class Client:
         order_by: Optional[schemas.QueryOrderBys] = None,
         aliases: Optional[schemas.QueryAliases] = None,
     ):
+        params = {"limit": limit, "offset": offset}
         json = {
             "types": types,
-            "limit": limit,
-            "offset": offset,
             "joins": joins,
             "aliases": aliases,
             "filters": filters,
@@ -315,6 +314,7 @@ class Client:
         return self.request(
             f"/query/{self.cfg.database_name}",
             method="GET",
+            params=params,
             headers=self.headers,
             json=json,
             return_pandas_dataframe=True,
