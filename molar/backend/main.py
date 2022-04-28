@@ -1,6 +1,6 @@
 # external
 from fastapi import FastAPI
-from starlette.middleware.cors import CORSMiddleware
+from fastapi.middleware.cors import CORSMiddleware
 
 # molar
 from molar import __version__

@@ -68,7 +68,6 @@ def create(
     )
 
 
-@router.patch("/{database_name}", response_model=schemas.EventStore)
 def update(
     database_name: str,
     event: schemas.EventStoreUpdate,
@@ -92,6 +91,28 @@ def update(
         user_id=obj_out.user_id,
         alembic_version=obj_out.alembic_version,
     )
+
+
+@router.patch("/{database_name}", response_model=schemas.EventStore)
+def update_patch(
+    database_name: str,
+    event: schemas.EventStoreUpdate,
+    db: Session = Depends(deps.get_db),
+    current_user=Depends(deps.get_current_active_user),
+    crud=Depends(deps.get_crud),
+):
+    return update(database_name, event, db, current_user, crud)
+
+
+@router.post("/update/{database_name}", response_model=schemas.EventStore)
+def update_post(
+    database_name: str,
+    event: schemas.EventStoreUpdate,
+    db: Session = Depends(deps.get_db),
+    current_user=Depends(deps.get_current_active_user),
+    crud=Depends(deps.get_crud),
+):
+    return update(database_name, event, db, current_user, crud)
 
 
 @router.delete("/{database_name}", response_model=schemas.EventStore)

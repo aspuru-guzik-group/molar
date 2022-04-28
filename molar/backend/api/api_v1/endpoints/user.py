@@ -150,7 +150,8 @@ def update_user(
     current_user=Depends(deps.get_current_active_user),
     crud: CRUDInterface = Depends(deps.get_crud),
 ) -> Any:
-    current_user_data = jsonable_encoder(crud.user.get_by_email(db, email=email))
+    user_to_update = crud.user.get_by_email(db, email=email)
+    current_user_data = jsonable_encoder(user_to_update)
     user_in = schemas.UserUpdate(**current_user_data)
     if email != current_user.email and not current_user.is_superuser:
         raise HTTPException(
@@ -171,7 +172,7 @@ def update_user(
         user_in.is_active = is_active
     if is_superuser is not None:
         user_in.is_superuser = is_superuser
-    user = crud.user.update(db, db_obj=current_user, obj_in=user_in)
+    user = crud.user.update(db, db_obj=user_to_update, obj_in=user_in)
     return {"msg": f"User {user.email} has been updated!"}
 
 

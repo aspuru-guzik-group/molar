@@ -45,7 +45,7 @@ class TestEventStore:
                 "uuid": "91912ca4-cf33-428b-baf0-dfe89ef2dbda",
             },
         )
-        assert out.status_code == 404
+        assert out.status_code == 500
 
     def test_delete_eventstore(self, client, new_database_headers):
         out = client.get(
