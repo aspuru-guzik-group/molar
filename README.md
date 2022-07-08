@@ -1,5 +1,7 @@
 # Molar 🦷
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.6809291.svg)](https://doi.org/10.5281/zenodo.6809291)
+
 Molar is a database management system for PostgreSQL. Its main focus is to enable chemists and material scientist to store the results of their experiment, whether exprimental or not!
 
 It consists of a REST API (implemented using FastAPI) and a python client. ITs main features are:
