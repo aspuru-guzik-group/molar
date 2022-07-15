@@ -302,6 +302,7 @@ class Client:
         filters: Optional[schemas.QueryFilters] = None,
         order_by: Optional[schemas.QueryOrderBys] = None,
         aliases: Optional[schemas.QueryAliases] = None,
+        return_pandas_dataframe: bool = True
     ):
         params = {"limit": limit, "offset": offset}
         json = {
@@ -317,7 +318,7 @@ class Client:
             params=params,
             headers=self.headers,
             json=json,
-            return_pandas_dataframe=True,
+            return_pandas_dataframe=return_pandas_dataframe,
         )
 
     def debug_query(
