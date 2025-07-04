@@ -68,7 +68,8 @@ def load_config(
     ctx.obj["sql_url"] = PostgresDsn.build(
         scheme="postgresql",
         host=config["POSTGRES_SERVER"],
-        user=config["POSTGRES_USER"],
+#        user=config["POSTGRES_USER"],
+        username=config["POSTGRES_USER"],
         password=config["POSTGRES_PASSWORD"],
         path=f"/{database or ''}",
     )

@@ -20,6 +20,7 @@ from python_on_whales import docker
 from python_on_whales.utils import DockerException
 from rich.console import Console
 from rich.prompt import Confirm, Prompt
+from sqlalchemy import text
 
 # molar
 from molar import sql_utils
@@ -171,8 +172,18 @@ def local(ctx):
             sleep(1)
     sleep(2)
 
+    try:
+        pwd = config["postgres_password"]
+    except:
+        pwd = config["POSTGRES_PASSWORD"]
+
     console.log("Installing Molar...")
-    _install_molar(ctx, "localhost", "postgres", config["postgres_password"])
+    print("config\n", config)
+    _install_molar(ctx, "localhost", "postgres", 
+                   pwd
+#                   config["POSTGRES_PASSWORD"],
+#                   config["postgres_password"]
+                   )
 
     console.log("[bold blue]Creating the first superuser[/bold blue]")
     superuser_name = Prompt.ask("Full name")
@@ -185,7 +196,9 @@ def local(ctx):
         password=superuser_password,
         hostname="localhost",
         postgres_username="postgres",
-        postgres_password=config["postgres_password"],
+        postgres_password=pwd,
+#        postgres_password=config["postgres_password"],
+#        postgres_password=config["POSTGRES_PASSWORD"],
         postgres_database="molar_main",
     )
 
@@ -277,15 +290,18 @@ def _add_user(
         postgres_username, postgres_password, hostname, postgres_database
     )
     connection.execute(
-        (
-            'insert into "user".user '
+#        (
+        text(
+            #'insert into "user".user '
+            'INSERT INTO "user".user '
             '       ("full_name", '
             '        "email", '
             '        "hashed_password", '
             '        "is_superuser", '
             '        "is_active" , '
             '        "created_on") '
-            "values "
+            #"values "
+            "VALUES "
             f"('{user_name}',"
             f"'{email}', "
             f" '{pwd_context.hash(password)}',"
@@ -326,15 +342,32 @@ def _create_database(
     connection = sql_utils.create_connection(
         postgres_username, postgres_password, hostname, "postgres"
     )
-    connection.execution_options(isolation_level="AUTOCOMMIT").execute(
-        f"create database {new_database_name}"
+#    connection.execution_options(isolation_level="AUTOCOMMIT").execute(
+    connection.execution_options(isolation_level="AUTOCOMMIT").exec_driver_sql(
+#        f"create database {new_database_name}"
+#        text(f"CREATE DATABASE {new_database_name}")
+        f'CREATE DATABASE "{new_database_name}"'
     )
     connection.close()
+
+    #new added
+    sql_url = (
+            f"postgresql://{postgres_username}:{postgres_password}"
+            f"@{hostname}/{new_database_name}"
+    )
+
+    ctx.ensure_object(dict)
+    ctx.obj["sql_url"] = sql_url
+    ctx.obj["data_dir"] = ctx.obj.get("data_dir")
+
+
     connection = sql_utils.create_connection(
         postgres_username, postgres_password, hostname, new_database_name
     )
-
-    alembic_config = alembic_utils.get_alembic_config(ctx, database="molar_main")
+    print("new_database_name", new_database_name)
+    print("ctx", ctx.obj["sql_url"])
+    #alembic_config = alembic_utils.get_alembic_config(ctx, database="molar_main")
+    alembic_config = alembic_utils.get_alembic_config(ctx, database=new_database_name)
     alembic_config.set_main_option(
         "sqlalchemy.url",
         (

@@ -24,7 +24,8 @@ def get_alembic_config(ctx, database: Optional[str] = None):
         )
     alembic_config.set_main_option("version_locations", version_locations)
     alembic_config.set_main_option("script_location", "molar:migrations")
-    alembic_config.set_main_option("sqlalchemy.url", sql_url)
+    #alembic_config.set_main_option("sqlalchemy.url", sql_url)
+    alembic_config.set_main_option("sqlalchemy.url", str(sql_url))
     return alembic_config
 
 
